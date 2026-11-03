@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOKEN — Sistema de Moeda Estudantil (Lab03S02)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container header-inner">
+            <div class="brand">
+                <span class="brand-badge" aria-hidden="true">🪙</span>
+                <div>
+                    <h1>TOKEN</h1>
+                    <p class="subtitle">Sistema de Moeda Estudantil — Lab03S02</p>
+                </div>
+            </div>
+            <nav class="main-nav" aria-label="Navegação de Módulos">
+                <button type="button" id="tab-alunos" class="nav-btn active" aria-selected="true" aria-controls="section-alunos">
+                    🎓 CRUD de Alunos (US02)
+                </button>
+                <button type="button" id="tab-empresas" class="nav-btn" aria-selected="false" aria-controls="section-empresas">
+                    🏢 CRUD de Empresas Parceiras (US03)
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <div id="status-banner" class="status-banner" role="status" aria-live="polite" hidden></div>
+
+        <!-- SEÇÃO: CRUD DE ALUNO (US02) -->
+        <section id="section-alunos" class="module-section" aria-labelledby="heading-alunos">
+            <div class="section-header">
+                <h2 id="heading-alunos">Gestão de Alunos</h2>
+                <p>Cadastre, consulte, atualize ou remova alunos participantes do sistema de mérito estudantil.</p>
+            </div>
+
+            <div class="crud-grid">
+                <!-- Formulário de Aluno -->
+                <div class="card">
+                    <form id="form-aluno" action="/api/alunos" method="POST" novalidate>
+                        <input type="hidden" id="aluno-id" name="id">
+
+                        <fieldset>
+                            <legend id="form-aluno-legend">Novo Cadastro de Aluno</legend>
+
+                            <div class="field">
+                                <label for="aluno-nome">Nome completo <span class="req">*</span></label>
+                                <input type="text" id="aluno-nome" name="nome" autocomplete="name" required maxlength="120" aria-errormessage="err-aluno-nome">
+                                <div id="err-aluno-nome" class="error-msg">
+                                    <span aria-hidden="true">❌</span> Informe o nome completo do aluno.
+                                </div>
+                            </div>
+
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="aluno-email">E-mail acadêmico <span class="req">*</span></label>
+                                    <span id="hint-aluno-email" class="hint">Formato: aluno@instituicao.edu.br</span>
+                                    <input type="email" id="aluno-email" name="email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false" required aria-describedby="hint-aluno-email" aria-errormessage="err-aluno-email">
+                                    <div id="err-aluno-email" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Informe um endereço de e-mail válido.
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="aluno-matricula">Matrícula</label>
+                                    <span id="hint-aluno-matricula" class="hint">Apenas números (opcional)</span>
+                                    <input type="text" id="aluno-matricula" name="matricula" inputmode="numeric" pattern="\d*" autocorrect="off" spellcheck="false" aria-describedby="hint-aluno-matricula">
+                                </div>
+                            </div>
+
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="aluno-cpf">CPF <span class="req">*</span></label>
+                                    <span id="hint-aluno-cpf" class="hint">Ex.: 123.456.789-00 ou 11 dígitos</span>
+                                    <input type="text" id="aluno-cpf" name="cpf" inputmode="numeric" autocorrect="off" spellcheck="false" required minlength="11" maxlength="14" aria-describedby="hint-aluno-cpf" aria-errormessage="err-aluno-cpf">
+                                    <div id="err-aluno-cpf" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Informe um CPF válido (11 a 14 caracteres).
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="aluno-rg">RG <span class="req">*</span></label>
+                                    <span id="hint-aluno-rg" class="hint">Ex.: MG-12.345.678</span>
+                                    <input type="text" id="aluno-rg" name="rg" autocorrect="off" spellcheck="false" required maxlength="20" aria-describedby="hint-aluno-rg" aria-errormessage="err-aluno-rg">
+                                    <div id="err-aluno-rg" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Informe o documento de identidade (RG).
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="aluno-endereco">Endereço completo <span class="req">*</span></label>
+                                <textarea id="aluno-endereco" name="endereco" rows="2" autocomplete="street-address" required maxlength="255" aria-errormessage="err-aluno-endereco"></textarea>
+                                <div id="err-aluno-endereco" class="error-msg">
+                                    <span aria-hidden="true">❌</span> Informe o endereço residencial completo.
+                                </div>
+                            </div>
+
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="aluno-instituicao">Instituição de Ensino <span class="req">*</span></label>
+                                    <span id="hint-aluno-inst" class="hint">Instituições parceiras pré-cadastradas</span>
+                                    <select id="aluno-instituicao" name="instituicaoId" required aria-describedby="hint-aluno-inst" aria-errormessage="err-aluno-inst">
+                                        <option value="">Selecione uma instituição...</option>
+                                    </select>
+                                    <div id="err-aluno-inst" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Selecione uma instituição de ensino.
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="aluno-curso">Curso <span class="req">*</span></label>
+                                    <span id="hint-aluno-curso" class="hint">Curso de graduação vinculado</span>
+                                    <select id="aluno-curso" name="curso" required aria-describedby="hint-aluno-curso" aria-errormessage="err-aluno-curso">
+                                        <option value="">Selecione um curso...</option>
+                                    </select>
+                                    <div id="err-aluno-curso" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Selecione o curso do aluno.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="aluno-login">Login de acesso <span class="req">*</span></label>
+                                    <span id="hint-aluno-login" class="hint">Identificador único para autenticação</span>
+                                    <input type="text" id="aluno-login" name="login" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" required minlength="3" maxlength="50" aria-describedby="hint-aluno-login" aria-errormessage="err-aluno-login">
+                                    <div id="err-aluno-login" class="error-msg">
+                                        <span aria-hidden="true">❌</span> O login deve ter pelo menos 3 caracteres.
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="aluno-senha">Senha <span class="req">*</span></label>
+                                    <span id="hint-aluno-senha" class="hint">Mínimo de 6 caracteres</span>
+                                    <div class="password-wrapper">
+                                        <input type="password" id="aluno-senha" name="senha" autocomplete="new-password" required minlength="6" aria-describedby="hint-aluno-senha" aria-errormessage="err-aluno-senha">
+                                        <button type="button" class="btn-toggle-pwd" data-target="aluno-senha" aria-pressed="false" aria-label="Mostrar senha">
+                                            👁️
+                                        </button>
+                                    </div>
+                                    <div id="err-aluno-senha" class="error-msg">
+                                        <span aria-hidden="true">❌</span> A senha deve ter pelo menos 6 caracteres.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" id="btn-salvar-aluno" class="btn btn-primary">Salvar Aluno</button>
+                                <button type="button" id="btn-cancelar-aluno" class="btn btn-secondary" hidden>Cancelar Edição</button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <!-- Listagem de Alunos -->
+                <div class="card">
+                    <div class="list-header">
+                        <h3>Alunos Cadastrados</h3>
+                        <button type="button" id="btn-recarregar-alunos" class="btn btn-outline">↻ Atualizar</button>
+                    </div>
+
+                    <div tabindex="0" role="region" aria-labelledby="caption-alunos" class="table-wrapper">
+                        <table id="tabela-alunos" class="data-table">
+                            <caption id="caption-alunos" class="visually-hidden">Lista de alunos cadastrados no sistema de mérito estudantil</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Nome</th>
+                                    <th scope="col">CPF / RG</th>
+                                    <th scope="col">Instituição / Curso</th>
+                                    <th scope="col">Saldo</th>
+                                    <th scope="col">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-alunos">
+                                <tr>
+                                    <td colspan="5" class="empty-row">Carregando alunos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO: CRUD DE EMPRESA PARCEIRA (US03) -->
+        <section id="section-empresas" class="module-section" aria-labelledby="heading-empresas" hidden>
+            <div class="section-header">
+                <h2 id="heading-empresas">Gestão de Empresas Parceiras</h2>
+                <p>Realize e gerencie o cadastro de empresas parceiras que ofertam produtos e descontos aos estudantes.</p>
+            </div>
+
+            <div class="crud-grid">
+                <!-- Formulário de Empresa Parceira -->
+                <div class="card">
+                    <form id="form-empresa" action="/api/empresas" method="POST" novalidate>
+                        <input type="hidden" id="empresa-id" name="id">
+
+                        <fieldset>
+                            <legend id="form-empresa-legend">Novo Cadastro de Empresa Parceira</legend>
+
+                            <div class="field">
+                                <label for="empresa-nome">Razão Social / Nome Fantasia <span class="req">*</span></label>
+                                <input type="text" id="empresa-nome" name="nome" autocomplete="organization" required maxlength="120" aria-errormessage="err-empresa-nome">
+                                <div id="err-empresa-nome" class="error-msg">
+                                    <span aria-hidden="true">❌</span> Informe o nome da empresa parceira.
+                                </div>
+                            </div>
+
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="empresa-cnpj">CNPJ <span class="req">*</span></label>
+                                    <span id="hint-empresa-cnpj" class="hint">Ex.: 12.345.678/0001-90</span>
+                                    <input type="text" id="empresa-cnpj" name="cnpj" inputmode="numeric" autocorrect="off" spellcheck="false" required minlength="14" maxlength="18" aria-describedby="hint-empresa-cnpj" aria-errormessage="err-empresa-cnpj">
+                                    <div id="err-empresa-cnpj" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Informe um CNPJ válido (14 a 18 caracteres).
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="empresa-email">E-mail corporativo <span class="req">*</span></label>
+                                    <span id="hint-empresa-email" class="hint">Formato: contato@empresa.com.br</span>
+                                    <input type="email" id="empresa-email" name="email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false" required aria-describedby="hint-empresa-email" aria-errormessage="err-empresa-email">
+                                    <div id="err-empresa-email" class="error-msg">
+                                        <span aria-hidden="true">❌</span> Informe um e-mail corporativo válido.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="empresa-descricao">Descrição da Parceria e Benefícios <span class="req">*</span></label>
+                                <span id="hint-empresa-desc" class="hint">Descreva o ramo da empresa e os tipos de vantagens oferecidas aos estudantes</span>
+                                <textarea id="empresa-descricao" name="descricao" rows="3" required maxlength="1000" aria-describedby="hint-empresa-desc" aria-errormessage="err-empresa-desc"></textarea>
+                                <div id="err-empresa-desc" class="error-msg">
+                                    <span aria-hidden="true">❌</span> Informe uma descrição para a empresa parceira.
+                                </div>
+                            </div>
+
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="empresa-login">Login de acesso <span class="req">*</span></label>
+                                    <span id="hint-empresa-login" class="hint">Identificador único para autenticação</span>
+                                    <input type="text" id="empresa-login" name="login" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" required minlength="3" maxlength="50" aria-describedby="hint-empresa-login" aria-errormessage="err-empresa-login">
+                                    <div id="err-empresa-login" class="error-msg">
+                                        <span aria-hidden="true">❌</span> O login deve ter pelo menos 3 caracteres.
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="empresa-senha">Senha <span class="req">*</span></label>
+                                    <span id="hint-empresa-senha" class="hint">Mínimo de 6 caracteres</span>
+                                    <div class="password-wrapper">
+                                        <input type="password" id="empresa-senha" name="senha" autocomplete="new-password" required minlength="6" aria-describedby="hint-empresa-senha" aria-errormessage="err-empresa-senha">
+                                        <button type="button" class="btn-toggle-pwd" data-target="empresa-senha" aria-pressed="false" aria-label="Mostrar senha">
+                                            👁️
+                                        </button>
+                                    </div>
+                                    <div id="err-empresa-senha" class="error-msg">
+                                        <span aria-hidden="true">❌</span> A senha deve ter pelo menos 6 caracteres.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" id="btn-salvar-empresa" class="btn btn-primary">Salvar Empresa Parceira</button>
+                                <button type="button" id="btn-cancelar-empresa" class="btn btn-secondary" hidden>Cancelar Edição</button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <!-- Listagem de Empresas Parceiras -->
+                <div class="card">
+                    <div class="list-header">
+                        <h3>Empresas Parceiras Cadastradas</h3>
+                        <button type="button" id="btn-recarregar-empresas" class="btn btn-outline">↻ Atualizar</button>
+                    </div>
+
+                    <div tabindex="0" role="region" aria-labelledby="caption-empresas" class="table-wrapper">
+                        <table id="tabela-empresas" class="data-table">
+                            <caption id="caption-empresas" class="visually-hidden">Lista de empresas parceiras cadastradas no sistema</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Empresa</th>
+                                    <th scope="col">CNPJ</th>
+                                    <th scope="col">Contato / Login</th>
+                                    <th scope="col">Descrição</th>
+                                    <th scope="col">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-empresas">
+                                <tr>
+                                    <td colspan="5" class="empty-row">Carregando empresas parceiras...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
