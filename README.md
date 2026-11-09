@@ -36,9 +36,12 @@ Consulte o arquivo [Diagrama_Casos_de_Uso.drawio.pdf](Diagramas/Diagrama_Casos_d
 
 ## Tecnologias
 
+Detalhes, versões e o papel de cada tecnologia: **[STACK.md](STACK.md)**.
+
 | Camada | Tecnologia |
 |--------|-----------|
-| View (front-end) | HTML5, CSS3 e JavaScript puro (SPA servida pelo próprio Spring Boot) |
+| View (front-end) | React 19 + React Router, Vite, Tailwind CSS 4 (SPA empacotada dentro do jar do Spring Boot) |
+| Testes | Vitest + Testing Library (front-end), JUnit 5 + MockMvc (back-end) |
 | Controller | Spring Web MVC (API REST), Bean Validation (inclusive `@CPF` e `@CNPJ`) |
 | Model / Service | Java 21, Spring Boot 3.5 |
 | Persistência | Spring Data JPA + Hibernate (ORM), padrão Repository/DAO, banco H2 em arquivo |
@@ -59,15 +62,22 @@ token/src/main/java/com/management
 ├── repository/   → Interfaces Spring Data JPA (camada de acesso a dados / DAO)
 ├── dto/          → Objetos de entrada/saída da API (a senha nunca é exposta)
 ├── event/        → Eventos de domínio que disparam e-mails após o commit
-└── config/       → Seed de dados, agendamento do crédito semestral, configuração web
-src/main/resources/static → View (index.html, app.js, styles.css)
+└── config/       → Seed de dados, agendamento do crédito semestral, configuração web (serve o React)
+
+frontend/src      → View (React)
+├── pages/        → telas por perfil: publico/, aluno/, professor/, empresa/ e ExtratoPage
+├── components/   → layout, rotas protegidas, formulários, gráfico e componentes de UI
+├── context/      → sessão do usuário (AuthContext) e notificações
+├── hooks/ lib/   → acesso à API, validações, formatação e indicadores dos painéis
+└── test/         → utilitários do Vitest (mock da API e dados de exemplo)
 ```
 
 Os componentes do diagrama correspondem ao código assim:
 
 | Componente do diagrama | Implementação |
 |------------------------|---------------|
-| Portal de Autenticação / Painéis (Aluno, Professor, Empresa) | `static/app.js` (telas por perfil) |
+| Portal de Autenticação | `frontend/src/pages/publico/*` + `AuthContext` + `RotaProtegida` |
+| Painéis (Aluno, Professor, Empresa) | `frontend/src/pages/aluno/*`, `professor/*`, `empresa/*` |
 | AutenticacaoService | `AutenticacaoService` + `AuthController` + `AutenticacaoInterceptor` |
 | GestaoUsuariosModule | `AlunoService`, `EmpresaService`, `ProfessorService`, `InstituicaoService` |
 | TransacaoMoedaService | `TransacaoMoedaService` (envio, saldo e extrato) |
@@ -95,9 +105,11 @@ docker compose up --build
 Outros comandos:
 
 ```bash
-docker compose run --rm testes   # roda os testes automatizados (JUnit + MockMvc)
-docker compose down              # para os containers (mantém o banco)
-docker compose down -v           # para e APAGA o banco (volta aos dados iniciais)
+docker compose run --rm testes            # testes do back-end (JUnit + MockMvc)
+docker compose run --rm testes-front      # testes do front-end (Vitest + Testing Library)
+docker compose --profile dev up --build   # front com hot reload em http://localhost:5173
+docker compose down                       # para os containers (mantém o banco)
+docker compose down -v                    # para e APAGA o banco (volta aos dados iniciais)
 ```
 
 ### Usuários de demonstração
@@ -120,7 +132,11 @@ docker compose down -v           # para e APAGA o banco (volta aos dados iniciai
 5. Entre como `restaurante.campus`, confira o cupom e marque-o como utilizado.
 
 ### Execução sem Docker (opcional)
-Com Java 21 e Maven instalados: `cd token && mvn spring-boot:run`. Sem um servidor SMTP local, os e-mails falham e o erro aparece apenas no log; as operações continuam funcionando normalmente.
+Requer Java 21, Maven e Node 22 instalados:
+1. Back-end: `cd token && mvn spring-boot:run` (API em http://localhost:8080).
+2. Front-end: `cd frontend && npm install && npm run dev`. Abra http://localhost:5173; o Vite encaminha `/api` para a porta 8080.
+
+Sem um servidor SMTP local, os e-mails falham e o erro aparece apenas no log; as operações continuam funcionando normalmente.
 
 ---
 

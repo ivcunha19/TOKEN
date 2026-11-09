@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+Diagramas
+**/node_modules
+frontend/dist
+frontend/coverage
+token/target
+token/data
+*.mv.db
+*.trace.db

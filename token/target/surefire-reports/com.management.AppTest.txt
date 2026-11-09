@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.management.AppTest
 -------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 38.43 s -- in com.management.AppTest
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 31.80 s -- in com.management.AppTest

@@ -1,16 +1,21 @@
 # TOKEN — Sistema de Moeda Estudantil
 #
-#   Subir a aplicação:   docker compose up --build
-#   Rodar os testes:     docker compose run --rm testes
-#   Parar:               docker compose down        (adicione -v para apagar o banco)
+#   Subir a aplicação:        docker compose up --build
+#   Testes do back-end:       docker compose run --rm testes
+#   Testes do front-end:      docker compose run --rm testes-front
+#   Front com hot reload:     docker compose --profile dev up --build   (abre em http://localhost:5173)
+#   Parar:                    docker compose down        (adicione -v para apagar o banco)
 #
-#   Aplicação:           http://localhost:8080
-#   Caixa de e-mails:    http://localhost:8025   (Mailpit — captura todos os e-mails enviados)
-#   Console H2:          http://localhost:8080/h2-console  (JDBC URL: jdbc:h2:file:./data/tokendb, usuário: sa)
+#   Aplicação:                http://localhost:8080
+#   Caixa de e-mails:         http://localhost:8025   (Mailpit — captura todos os e-mails enviados)
+#   Console H2:               http://localhost:8080/h2-console  (JDBC URL: jdbc:h2:file:./data/tokendb, usuário: sa)
 
 services:
+  # Back-end Spring Boot servindo também o build do React (mesma origem → sessão por cookie)
   app:
-    build: ./token
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: token-app
     ports:
       - "8080:8080"
@@ -32,6 +37,24 @@ services:
       - "8025:8025"
     restart: unless-stopped
 
+  # Servidor de desenvolvimento do Vite (hot reload); encaminha /api para o serviço "app"
+  frontend-dev:
+    image: node:22-alpine
+    profiles: ["dev"]
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev"
+    environment:
+      VITE_API_PROXY: http://app:8080
+      VITE_POLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - front-node-modules:/app/node_modules
+    depends_on:
+      - app
+
+  # Testes do back-end (JUnit + MockMvc)
   testes:
     image: maven:3.9.9-eclipse-temurin-21
     profiles: ["testes"]
@@ -41,6 +64,17 @@ services:
       - ./token:/workspace
       - maven-repo:/root/.m2
 
+  # Testes do front-end (Vitest + Testing Library)
+  testes-front:
+    image: node:22-alpine
+    profiles: ["testes"]
+    working_dir: /app
+    command: sh -c "npm ci --no-audit --no-fund && npm test"
+    volumes:
+      - ./frontend:/app
+      - front-node-modules:/app/node_modules
+
 volumes:
   token-data:
   maven-repo:
+  front-node-modules:

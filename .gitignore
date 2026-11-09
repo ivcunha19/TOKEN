@@ -12,3 +12,10 @@ token/data/
 .vscode/
 *.iml
 .DS_Store
+
+# Front-end (React)
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+# Build do React copiado para o jar durante o build do Docker
+token/src/main/resources/static/

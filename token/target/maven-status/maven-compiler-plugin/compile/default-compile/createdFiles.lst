@@ -32,6 +32,7 @@ com/management/controller/TransacaoController.class
 com/management/dto/LoginRequestDTO.class
 com/management/dto/ExtratoDTO.class
 com/management/repository/ResgateVantagemRepository.class
+com/management/config/WebConfig$1.class
 com/management/repository/EmpresaRepository.class
 com/management/exception/RecursoNaoEncontradoException.class
 com/management/controller/ResgateController.class
