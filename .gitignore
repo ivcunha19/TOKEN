@@ -1,0 +1,14 @@
+# Build (Maven)
+token/target/
+
+# Banco H2 local
+token/data/
+*.mv.db
+*.trace.db
+*.lock.db
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.DS_Store

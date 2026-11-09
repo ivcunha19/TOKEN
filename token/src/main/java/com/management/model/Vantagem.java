@@ -1,8 +1,12 @@
 package com.management.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "VANTAGEM")
@@ -12,6 +16,10 @@ public class Vantagem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
+
+    @Version
+    @Column(name = "VERSAO")
+    private Long versao;
 
     @NotBlank(message = "O nome da vantagem é obrigatório")
     @Column(name = "NOME", nullable = false)
@@ -29,22 +37,36 @@ public class Vantagem {
     @Column(name = "QUANTIDADE", nullable = false)
     private int quantidade;
 
-    @Column(name = "FOTO", length = 1000)
-    private String foto;
+    /** Foto do produto (bytes da imagem). */
+    @JsonIgnore
+    @Lob
+    @Column(name = "FOTO")
+    private byte[] foto;
 
+    /** Content-Type da foto (image/png, image/jpeg...). */
+    @Column(name = "FOTO_TIPO", length = 50)
+    private String fotoTipo;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "EMPRESA_ID", nullable = false)
     private Empresa empresa;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "vantagem")
+    private List<ResgateVantagem> resgates = new ArrayList<>();
+
     public Vantagem() {
     }
 
-    public Vantagem(String nome, int custo, String descricao, int quantidade, String foto, Empresa empresa) {
+    public Vantagem(String nome, int custo, String descricao, int quantidade,
+                    byte[] foto, String fotoTipo, Empresa empresa) {
         this.nome = nome;
         this.custo = custo;
         this.descricao = descricao;
         this.quantidade = quantidade;
         this.foto = foto;
+        this.fotoTipo = fotoTipo;
         this.empresa = empresa;
     }
 
@@ -58,12 +80,25 @@ public class Vantagem {
         }
     }
 
+    public boolean possuiFoto() {
+        return this.foto != null && this.foto.length > 0;
+    }
+
+    public void atualizarFoto(byte[] foto, String fotoTipo) {
+        this.foto = foto;
+        this.fotoTipo = fotoTipo;
+    }
+
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersao() {
+        return versao;
     }
 
     public String getNome() {
@@ -98,12 +133,12 @@ public class Vantagem {
         this.quantidade = quantidade;
     }
 
-    public String getFoto() {
+    public byte[] getFoto() {
         return foto;
     }
 
-    public void setFoto(String foto) {
-        this.foto = foto;
+    public String getFotoTipo() {
+        return fotoTipo;
     }
 
     public Empresa getEmpresa() {
@@ -112,5 +147,9 @@ public class Vantagem {
 
     public void setEmpresa(Empresa empresa) {
         this.empresa = empresa;
+    }
+
+    public List<ResgateVantagem> getResgates() {
+        return resgates;
     }
 }

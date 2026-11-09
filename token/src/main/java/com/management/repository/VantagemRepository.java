@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface VantagemRepository extends JpaRepository<Vantagem, Long> {
-    List<Vantagem> findByEmpresaId(Long empresaId);
+    List<Vantagem> findByEmpresaIdOrderByNomeAsc(Long empresaId);
+    List<Vantagem> findAllByOrderByNomeAsc();
 }

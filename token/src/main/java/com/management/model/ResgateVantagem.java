@@ -1,5 +1,6 @@
 package com.management.model;
 
+import com.management.exception.RegraNegocioException;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,13 @@ public class ResgateVantagem {
     @Column(name = "DESCRICAO_MOTIVO", length = 500)
     private String descricaoMotivo;
 
+    /** Indica se a empresa parceira já conferiu e utilizou o cupom na troca presencial. */
+    @Column(name = "UTILIZADO", nullable = false)
+    private boolean utilizado = false;
+
+    @Column(name = "DATA_UTILIZACAO")
+    private LocalDateTime dataUtilizacao;
+
     public ResgateVantagem() {
         this.dataHora = LocalDateTime.now();
     }
@@ -44,6 +52,14 @@ public class ResgateVantagem {
         this.valor = valor;
         this.dataHora = LocalDateTime.now();
         this.descricaoMotivo = descricaoMotivo;
+    }
+
+    public void registrarUtilizacao() {
+        if (this.utilizado) {
+            throw new RegraNegocioException("Este cupom já foi utilizado em " + this.dataUtilizacao.toLocalDate() + ".");
+        }
+        this.utilizado = true;
+        this.dataUtilizacao = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -100,5 +116,13 @@ public class ResgateVantagem {
 
     public void setDescricaoMotivo(String descricaoMotivo) {
         this.descricaoMotivo = descricaoMotivo;
+    }
+
+    public boolean isUtilizado() {
+        return utilizado;
+    }
+
+    public LocalDateTime getDataUtilizacao() {
+        return dataUtilizacao;
     }
 }

@@ -1,0 +1,46 @@
+# TOKEN — Sistema de Moeda Estudantil
+#
+#   Subir a aplicação:   docker compose up --build
+#   Rodar os testes:     docker compose run --rm testes
+#   Parar:               docker compose down        (adicione -v para apagar o banco)
+#
+#   Aplicação:           http://localhost:8080
+#   Caixa de e-mails:    http://localhost:8025   (Mailpit — captura todos os e-mails enviados)
+#   Console H2:          http://localhost:8080/h2-console  (JDBC URL: jdbc:h2:file:./data/tokendb, usuário: sa)
+
+services:
+  app:
+    build: ./token
+    container_name: token-app
+    ports:
+      - "8080:8080"
+    environment:
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      H2_WEB_ALLOW_OTHERS: "true"
+      TZ: America/Sao_Paulo
+    volumes:
+      - token-data:/app/data
+    depends_on:
+      - mailpit
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    container_name: token-mailpit
+    ports:
+      - "8025:8025"
+    restart: unless-stopped
+
+  testes:
+    image: maven:3.9.9-eclipse-temurin-21
+    profiles: ["testes"]
+    working_dir: /workspace
+    command: mvn -B test
+    volumes:
+      - ./token:/workspace
+      - maven-repo:/root/.m2
+
+volumes:
+  token-data:
+  maven-repo:

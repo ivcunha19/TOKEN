@@ -34,14 +34,22 @@ public class Empresa extends Usuario {
         this.cnpj = cnpj;
     }
 
-    public Vantagem cadastrarVantagem(String nome, String descricao, int custo, String foto, int quantidade) {
-        Vantagem vantagem = new Vantagem(nome, custo, descricao, quantidade, foto, this);
+    public Vantagem cadastrarVantagem(String nome, String descricao, int custo,
+                                      byte[] foto, String fotoTipo, int quantidade) {
+        Vantagem vantagem = new Vantagem(nome, custo, descricao, quantidade, foto, fotoTipo, this);
         this.listaVantagem.add(vantagem);
         return vantagem;
     }
 
+    /** Confere se o código de cupom pertence a um resgate de alguma vantagem desta empresa. */
     public boolean conferirCupom(String codigo) {
-        return codigo != null && !codigo.isBlank();
+        if (codigo == null || codigo.isBlank()) {
+            return false;
+        }
+        String normalizado = codigo.trim();
+        return listaVantagem.stream()
+                .flatMap(v -> v.getResgates().stream())
+                .anyMatch(r -> r.getCodigoCupom().equalsIgnoreCase(normalizado));
     }
 
     public String getDescricao() {

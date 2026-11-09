@@ -15,7 +15,7 @@
     <artifactId>token</artifactId>
     <version>1.0.0</version>
     <name>TOKEN - Sistema de Moeda Estudantil</name>
-    <description>Sistema de Moeda Estudantil para reconhecimento de mérito acadêmico (Lab03S02)</description>
+    <description>Sistema de Moeda Estudantil para reconhecimento de mérito acadêmico (Lab03S03)</description>
 
     <properties>
         <java.version>21</java.version>
@@ -36,10 +36,22 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- Bean Validation -->
+        <!-- Bean Validation (inclui @CPF e @CNPJ do Hibernate Validator) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Envio de e-mails (JavaMail / SMTP) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- Hash de senhas com BCrypt -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
         <!-- Banco de Dados H2 -->

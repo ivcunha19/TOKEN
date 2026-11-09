@@ -1,8 +1,11 @@
 package com.management.service;
 
 import com.management.dto.EmpresaRequestDTO;
+import com.management.exception.RecursoNaoEncontradoException;
+import com.management.exception.RegraNegocioException;
 import com.management.model.Empresa;
 import com.management.repository.EmpresaRepository;
+import com.management.repository.ResgateVantagemRepository;
 import com.management.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +17,14 @@ public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ResgateVantagemRepository resgateRepository;
 
-    public EmpresaService(EmpresaRepository empresaRepository, UsuarioRepository usuarioRepository) {
+    public EmpresaService(EmpresaRepository empresaRepository,
+                          UsuarioRepository usuarioRepository,
+                          ResgateVantagemRepository resgateRepository) {
         this.empresaRepository = empresaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.resgateRepository = resgateRepository;
     }
 
     public List<Empresa> listarTodas() {
@@ -26,55 +33,58 @@ public class EmpresaService {
 
     public Empresa buscarPorId(Long id) {
         return empresaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa parceira não encontrada com ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Empresa parceira não encontrada com ID: " + id));
     }
 
     @Transactional
     public Empresa criar(EmpresaRequestDTO dto) {
-        if (usuarioRepository.existsByLogin(dto.getLogin())) {
-            throw new IllegalArgumentException("Já existe um usuário cadastrado com o login: " + dto.getLogin());
+        if (dto.getSenha() == null || dto.getSenha().isBlank()) {
+            throw new RegraNegocioException("A senha é obrigatória no cadastro.");
         }
-        if (usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Já existe um usuário cadastrado com o e-mail: " + dto.getEmail());
+        String login = dto.getLogin().trim();
+        String email = dto.getEmail().trim().toLowerCase();
+        String cnpj = Documentos.formatarCnpj(dto.getCnpj());
+
+        if (usuarioRepository.existsByLogin(login)) {
+            throw new RegraNegocioException("Já existe um usuário cadastrado com o login: " + login);
         }
-        if (empresaRepository.existsByCnpj(dto.getCnpj())) {
-            throw new IllegalArgumentException("Já existe uma empresa cadastrada com o CNPJ: " + dto.getCnpj());
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new RegraNegocioException("Já existe um usuário cadastrado com o e-mail: " + email);
+        }
+        if (empresaRepository.existsByCnpj(cnpj)) {
+            throw new RegraNegocioException("Já existe uma empresa cadastrada com o CNPJ: " + cnpj);
         }
 
-        Empresa empresa = new Empresa(
-                dto.getNome(),
-                dto.getSenha(),
-                dto.getLogin(),
-                dto.getEmail(),
-                dto.getDescricao(),
-                dto.getCnpj()
-        );
-
+        Empresa empresa = new Empresa(dto.getNome().trim(), dto.getSenha(), login, email,
+                dto.getDescricao().trim(), cnpj);
         return empresaRepository.save(empresa);
     }
 
     @Transactional
     public Empresa atualizar(Long id, EmpresaRequestDTO dto) {
         Empresa existente = buscarPorId(id);
+        String login = dto.getLogin().trim();
+        String email = dto.getEmail().trim().toLowerCase();
+        String cnpj = Documentos.formatarCnpj(dto.getCnpj());
 
-        if (!existente.getLogin().equals(dto.getLogin()) && usuarioRepository.existsByLogin(dto.getLogin())) {
-            throw new IllegalArgumentException("Já existe outro usuário com o login: " + dto.getLogin());
+        if (!existente.getLogin().equals(login) && usuarioRepository.existsByLogin(login)) {
+            throw new RegraNegocioException("Já existe outro usuário com o login: " + login);
         }
-        if (!existente.getEmail().equals(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Já existe outro usuário com o e-mail: " + dto.getEmail());
+        if (!existente.getEmail().equalsIgnoreCase(email) && usuarioRepository.existsByEmail(email)) {
+            throw new RegraNegocioException("Já existe outro usuário com o e-mail: " + email);
         }
-        if (!existente.getCnpj().equals(dto.getCnpj()) && empresaRepository.existsByCnpj(dto.getCnpj())) {
-            throw new IllegalArgumentException("Já existe outra empresa com o CNPJ: " + dto.getCnpj());
+        if (!existente.getCnpj().equals(cnpj) && empresaRepository.existsByCnpj(cnpj)) {
+            throw new RegraNegocioException("Já existe outra empresa com o CNPJ: " + cnpj);
         }
 
-        existente.setNome(dto.getNome());
-        existente.setEmail(dto.getEmail());
-        existente.setLogin(dto.getLogin());
+        existente.setNome(dto.getNome().trim());
+        existente.setEmail(email);
+        existente.setLogin(login);
         if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
-            existente.setSenha(dto.getSenha());
+            existente.alterarSenha(dto.getSenha());
         }
-        existente.setCnpj(dto.getCnpj());
-        existente.setDescricao(dto.getDescricao());
+        existente.setCnpj(cnpj);
+        existente.setDescricao(dto.getDescricao().trim());
 
         return empresaRepository.save(existente);
     }
@@ -82,6 +92,10 @@ public class EmpresaService {
     @Transactional
     public void excluir(Long id) {
         Empresa existente = buscarPorId(id);
+        if (resgateRepository.existsByVantagemEmpresaId(id)) {
+            throw new RegraNegocioException("Não é possível excluir a empresa: há cupons de vantagens já resgatados "
+                    + "por alunos. Zere o estoque das vantagens para retirá-las do catálogo.");
+        }
         empresaRepository.delete(existente);
     }
 }

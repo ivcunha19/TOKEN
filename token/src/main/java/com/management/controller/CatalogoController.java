@@ -1,5 +1,6 @@
 package com.management.controller;
 
+import com.management.auth.Publico;
 import com.management.model.ECurso;
 import com.management.model.Instituicao;
 import com.management.service.InstituicaoService;
@@ -12,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/** Dados de apoio ao cadastro (instituições pré-cadastradas e cursos). */
 @RestController
 @RequestMapping("/api")
 public class CatalogoController {
@@ -22,11 +24,13 @@ public class CatalogoController {
         this.instituicaoService = instituicaoService;
     }
 
+    @Publico
     @GetMapping("/instituicoes")
     public ResponseEntity<List<Instituicao>> listarInstituicoes() {
         return ResponseEntity.ok(instituicaoService.listarTodas());
     }
 
+    @Publico
     @GetMapping("/cursos")
     public ResponseEntity<List<Map<String, String>>> listarCursos() {
         List<Map<String, String>> cursos = Arrays.stream(ECurso.values())

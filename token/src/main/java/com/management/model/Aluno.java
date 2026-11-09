@@ -1,5 +1,6 @@
 package com.management.model;
 
+import com.management.exception.RegraNegocioException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,12 +39,24 @@ public class Aluno extends UsuarioPessoa {
         this.matricula = matricula;
     }
 
-    public void resgatarVantagem() {
-        // Implementação completa prevista na US07 / Sprint 03
-    }
-
-    public void enviarEmail() {
-        // Notificação por e-mail prevista nas US05/US07
+    /**
+     * Troca moedas por uma vantagem: valida estoque e saldo, debita o custo,
+     * baixa o estoque e devolve o registro de resgate com o código do cupom.
+     */
+    public ResgateVantagem resgatarVantagem(Vantagem vantagem, String codigoCupom) {
+        if (vantagem == null) {
+            throw new RegraNegocioException("Selecione uma vantagem para resgatar.");
+        }
+        if (!vantagem.verificarDisponibilidade()) {
+            throw new RegraNegocioException("A vantagem \"" + vantagem.getNome() + "\" está esgotada.");
+        }
+        if (!this.debitarMoedas(vantagem.getCusto())) {
+            throw new RegraNegocioException("Saldo insuficiente. A vantagem custa " + vantagem.getCusto()
+                    + " moedas e seu saldo é de " + this.saldo + " moedas.");
+        }
+        vantagem.reduzirEstoque();
+        return new ResgateVantagem(codigoCupom, this, vantagem, vantagem.getCusto(),
+                "Resgate da vantagem: " + vantagem.getNome());
     }
 
     public String getRg() {

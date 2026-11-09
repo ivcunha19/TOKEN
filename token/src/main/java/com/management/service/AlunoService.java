@@ -1,10 +1,13 @@
 package com.management.service;
 
 import com.management.dto.AlunoRequestDTO;
+import com.management.exception.RecursoNaoEncontradoException;
+import com.management.exception.RegraNegocioException;
 import com.management.model.Aluno;
 import com.management.model.Instituicao;
 import com.management.repository.AlunoRepository;
-import com.management.repository.InstituicaoRepository;
+import com.management.repository.ResgateVantagemRepository;
+import com.management.repository.TransacaoRepository;
 import com.management.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,84 +18,87 @@ import java.util.List;
 public class AlunoService {
 
     private final AlunoRepository alunoRepository;
-    private final InstituicaoRepository instituicaoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final InstituicaoService instituicaoService;
+    private final TransacaoRepository transacaoRepository;
+    private final ResgateVantagemRepository resgateRepository;
 
     public AlunoService(AlunoRepository alunoRepository,
-                        InstituicaoRepository instituicaoRepository,
-                        UsuarioRepository usuarioRepository) {
+                        UsuarioRepository usuarioRepository,
+                        InstituicaoService instituicaoService,
+                        TransacaoRepository transacaoRepository,
+                        ResgateVantagemRepository resgateRepository) {
         this.alunoRepository = alunoRepository;
-        this.instituicaoRepository = instituicaoRepository;
         this.usuarioRepository = usuarioRepository;
-    }
-
-    public List<Aluno> listarTodos() {
-        return alunoRepository.findAll();
+        this.instituicaoService = instituicaoService;
+        this.transacaoRepository = transacaoRepository;
+        this.resgateRepository = resgateRepository;
     }
 
     public Aluno buscarPorId(Long id) {
         return alunoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Aluno não encontrado com ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Aluno não encontrado com ID: " + id));
+    }
+
+    /** Alunos de uma instituição (usado pelo professor para escolher quem recebe moedas). */
+    public List<Aluno> listarPorInstituicao(Long instituicaoId) {
+        return alunoRepository.findByInstituicaoIdOrderByNomeAsc(instituicaoId);
     }
 
     @Transactional
     public Aluno criar(AlunoRequestDTO dto) {
-        if (usuarioRepository.existsByLogin(dto.getLogin())) {
-            throw new IllegalArgumentException("Já existe um usuário cadastrado com o login: " + dto.getLogin());
+        if (dto.getSenha() == null || dto.getSenha().isBlank()) {
+            throw new RegraNegocioException("A senha é obrigatória no cadastro.");
         }
-        if (usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Já existe um usuário cadastrado com o e-mail: " + dto.getEmail());
+        String login = dto.getLogin().trim();
+        String email = dto.getEmail().trim().toLowerCase();
+        String cpf = Documentos.formatarCpf(dto.getCpf());
+
+        if (usuarioRepository.existsByLogin(login)) {
+            throw new RegraNegocioException("Já existe um usuário cadastrado com o login: " + login);
         }
-        if (alunoRepository.existsByCpf(dto.getCpf())) {
-            throw new IllegalArgumentException("Já existe um aluno cadastrado com o CPF: " + dto.getCpf());
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new RegraNegocioException("Já existe um usuário cadastrado com o e-mail: " + email);
+        }
+        if (usuarioRepository.existsPessoaByCpf(cpf)) {
+            throw new RegraNegocioException("Já existe uma pessoa cadastrada com o CPF: " + cpf);
         }
 
-        Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Instituição de ensino não encontrada com ID: " + dto.getInstituicaoId()));
+        Instituicao instituicao = instituicaoService.buscarPorId(dto.getInstituicaoId());
 
-        Aluno aluno = new Aluno(
-                dto.getNome(),
-                dto.getSenha(),
-                dto.getLogin(),
-                dto.getEmail(),
-                dto.getCpf(),
-                instituicao,
-                dto.getRg(),
-                dto.getEndereco(),
-                dto.getCurso(),
-                dto.getMatricula()
-        );
-
+        Aluno aluno = new Aluno(dto.getNome().trim(), dto.getSenha(), login, email, cpf, instituicao,
+                dto.getRg().trim(), dto.getEndereco().trim(), dto.getCurso(), dto.getMatricula());
+        instituicao.vincularAluno(aluno);
         return alunoRepository.save(aluno);
     }
 
     @Transactional
     public Aluno atualizar(Long id, AlunoRequestDTO dto) {
         Aluno existente = buscarPorId(id);
+        String login = dto.getLogin().trim();
+        String email = dto.getEmail().trim().toLowerCase();
+        String cpf = Documentos.formatarCpf(dto.getCpf());
 
-        if (!existente.getLogin().equals(dto.getLogin()) && usuarioRepository.existsByLogin(dto.getLogin())) {
-            throw new IllegalArgumentException("Já existe outro usuário com o login: " + dto.getLogin());
+        if (!existente.getLogin().equals(login) && usuarioRepository.existsByLogin(login)) {
+            throw new RegraNegocioException("Já existe outro usuário com o login: " + login);
         }
-        if (!existente.getEmail().equals(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Já existe outro usuário com o e-mail: " + dto.getEmail());
+        if (!existente.getEmail().equalsIgnoreCase(email) && usuarioRepository.existsByEmail(email)) {
+            throw new RegraNegocioException("Já existe outro usuário com o e-mail: " + email);
         }
-        if (!existente.getCpf().equals(dto.getCpf()) && alunoRepository.existsByCpf(dto.getCpf())) {
-            throw new IllegalArgumentException("Já existe outro aluno com o CPF: " + dto.getCpf());
+        if (!existente.getCpf().equals(cpf) && usuarioRepository.existsPessoaByCpf(cpf)) {
+            throw new RegraNegocioException("Já existe outra pessoa com o CPF: " + cpf);
         }
 
-        Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
-                .orElseThrow(() -> new IllegalArgumentException("Instituição de ensino não encontrada com ID: " + dto.getInstituicaoId()));
-
-        existente.setNome(dto.getNome());
-        existente.setEmail(dto.getEmail());
-        existente.setLogin(dto.getLogin());
+        existente.setNome(dto.getNome().trim());
+        existente.setEmail(email);
+        existente.setLogin(login);
         if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
-            existente.setSenha(dto.getSenha());
+            existente.alterarSenha(dto.getSenha());
         }
-        existente.setCpf(dto.getCpf());
-        existente.setRg(dto.getRg());
-        existente.setEndereco(dto.getEndereco());
-        existente.setInstituicao(instituicao);
+        existente.setCpf(cpf);
+        existente.setRg(dto.getRg().trim());
+        existente.setEndereco(dto.getEndereco().trim());
+        existente.setInstituicao(instituicaoService.buscarPorId(dto.getInstituicaoId()));
         existente.setCurso(dto.getCurso());
         existente.setMatricula(dto.getMatricula());
 
@@ -102,6 +108,10 @@ public class AlunoService {
     @Transactional
     public void excluir(Long id) {
         Aluno existente = buscarPorId(id);
+        if (transacaoRepository.existsByAlunoId(id) || resgateRepository.existsByAlunoId(id)) {
+            throw new RegraNegocioException("Não é possível excluir a conta: já existem moedas recebidas ou "
+                    + "vantagens resgatadas registradas para este aluno (histórico preservado para auditoria).");
+        }
         alunoRepository.delete(existente);
     }
 }

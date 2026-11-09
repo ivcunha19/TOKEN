@@ -10,4 +10,5 @@ import java.util.List;
 public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
     List<Transacao> findByAlunoIdOrderByDataHoraDesc(Long alunoId);
     List<Transacao> findByProfessorIdOrderByDataHoraDesc(Long professorId);
+    boolean existsByAlunoId(Long alunoId);
 }

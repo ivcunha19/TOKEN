@@ -439,20 +439,6 @@ textarea:user-valid {
     padding: 2rem !important;
 }
 
-#tabela-alunos {
-    --label-2: "CPF / RG";
-    --label-3: "Instituição / Curso";
-    --label-4: "Saldo";
-    --label-5: "Ações";
-}
-
-#tabela-empresas {
-    --label-2: "CNPJ";
-    --label-3: "Contato / Login";
-    --label-4: "Descrição";
-    --label-5: "Ações";
-}
-
 @container (width < 600px) {
     .data-table,
     .data-table thead,
@@ -473,30 +459,368 @@ textarea:user-valid {
         border-radius: 6px;
     }
 
-    .data-table tbody th {
-        position: sticky;
-        inset-block-start: 0;
-        z-index: 2;
-        background: #f1f5f9;
-    }
-
-    .data-table td:nth-child(2)::before {
-        content: var(--label-2) ": ";
+    .data-table td[data-label]::before {
+        content: attr(data-label) ": ";
         font-weight: 700;
     }
+}
 
-    .data-table td:nth-child(3)::before {
-        content: var(--label-3) ": ";
-        font-weight: 700;
-    }
+/* ------------------------------------------------------------------ Sprint 3 */
 
-    .data-table td:nth-child(4)::before {
-        content: var(--label-4) ": ";
-        font-weight: 700;
-    }
+.loading,
+.vazio {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 1.5rem 0.5rem;
+    margin: 0;
+}
 
-    .data-table td:nth-child(5)::before {
-        content: var(--label-5) ": ";
-        font-weight: 700;
+/* Validação após tentativa de envio */
+.was-validated :is(input, select, textarea):invalid {
+    border-color: var(--error);
+    background-color: var(--error-bg);
+}
+
+.was-validated .field:has(:invalid) .error-msg {
+    display: block;
+}
+
+/* Cabeçalho: usuário logado */
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.user-area[hidden] {
+    display: none;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.25;
+}
+
+.user-tipo {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+}
+
+/* Abas */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-block-end: 1.25rem;
+    border-block-end: 2px solid var(--border-light);
+}
+
+.tab-btn {
+    min-height: 44px;
+    padding: 0.55rem 1rem;
+    font: inherit;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-block-end: 3px solid transparent;
+    margin-block-end: -2px;
+    cursor: pointer;
+}
+
+.tab-btn:hover {
+    color: var(--text);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-block-end-color: var(--primary);
+}
+
+.tab-btn:focus-visible {
+    outline: 3px solid #0b57d0;
+    outline-offset: 2px;
+}
+
+/* Login */
+.auth-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (min-width: 980px) {
+    .auth-layout {
+        grid-template-columns: 7fr 4fr;
     }
+}
+
+.demo-card h3 {
+    margin: 0 0 0.25rem;
+}
+
+.demo-list {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.demo-btn {
+    width: 100%;
+    display: grid;
+    gap: 0.1rem;
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    font: inherit;
+    background: #f8fafc;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.demo-btn:hover {
+    border-color: var(--primary);
+    background: #eff6ff;
+}
+
+.demo-tipo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+}
+
+.demo-btn code {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+/* Resumo (cards de estatística) */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-block-end: 1.5rem;
+}
+
+.stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    display: grid;
+    gap: 0.2rem;
+}
+
+.stat-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.stat-valor {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.stat-card.destaque {
+    background: linear-gradient(135deg, #1a56db, #1e3a8a);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.stat-card.destaque .stat-label {
+    color: #dbeafe;
+}
+
+.stat-card.destaque .stat-valor {
+    font-size: 1.6rem;
+}
+
+/* Catálogo de vantagens */
+.vantagens-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+.vantagens-grid.compacto {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.vantagem-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.vantagem-card img,
+.foto-placeholder {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: #e5e7eb;
+}
+
+.foto-placeholder {
+    display: grid;
+    place-items: center;
+    font-size: 3rem;
+}
+
+.vantagem-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1rem;
+    flex: 1;
+}
+
+.vantagem-corpo h3 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.vantagem-empresa {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.vantagem-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.vantagem-meta,
+.vantagem-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.vantagem-acoes {
+    margin-block-start: 0.35rem;
+}
+
+.vantagem-acoes .btn-primary {
+    width: 100%;
+}
+
+.foto-atual {
+    display: block;
+    max-width: 180px;
+    border-radius: 6px;
+    margin-block-end: 0.75rem;
+    border: 1px solid var(--border-light);
+}
+
+/* Badges e valores */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.badge-ok {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.badge-muted {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.valor-pos {
+    color: var(--success);
+    font-weight: 700;
+}
+
+.valor-neg {
+    color: var(--error);
+    font-weight: 700;
+}
+
+/* Cupons */
+.cupom-card {
+    margin-block-end: 1.5rem;
+    border: 2px dashed var(--primary);
+    text-align: center;
+}
+
+.cupom-card h3 {
+    margin-block-start: 0;
+}
+
+.cupom-code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 0.5rem 0;
+}
+
+.cupom-inline {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-weight: 700;
+    background: #f1f5f9;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.cupom-detalhe {
+    margin-block-start: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    border: 1px solid;
+}
+
+.cupom-detalhe.valido {
+    background: var(--success-bg);
+    border-color: var(--success);
+}
+
+.cupom-detalhe.usado {
+    background: #fff7ed;
+    border-color: #c2410c;
+}
+
+.cupom-detalhe dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 0.75rem;
+    margin: 0.5rem 0 0.75rem;
+}
+
+.cupom-detalhe dt {
+    font-weight: 700;
+}
+
+.cupom-detalhe dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.narrow {
+    max-width: 640px;
 }
