@@ -1,12 +1,26 @@
 package com.management;
 
-import com.management.exception.RegraNegocioException;
-import com.management.model.*;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+import com.management.exception.RegraNegocioException;
+import com.management.model.Aluno;
+import com.management.model.ECurso;
+import com.management.model.EDepartamento;
+import com.management.model.Empresa;
+import com.management.model.Instituicao;
+import com.management.model.Professor;
+import com.management.model.ResgateVantagem;
+import com.management.model.Semestre;
+import com.management.model.Transacao;
+import com.management.model.Vantagem;
 
 /** Testes unitários das regras de negócio implementadas nas classes de domínio. */
 class ModeloTest {

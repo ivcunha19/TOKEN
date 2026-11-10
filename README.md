@@ -1,6 +1,8 @@
 # TOKEN — Sistema de Moeda Estudantil
 
-O **TOKEN** permite que professores reconheçam o mérito dos alunos enviando moedas virtuais. Os alunos trocam essas moedas por vantagens (descontos e produtos) cadastradas por empresas parceiras e recebem um cupom com código único por e-mail para usar na troca presencial.
+> **T**alent & **O**utstanding **K**nowledge **E**ducational **N**etwork
+
+O **TOKEN** (*Talent & Outstanding Knowledge Educational Network*) permite que professores reconheçam o mérito dos alunos enviando moedas virtuais. Os alunos trocam essas moedas por vantagens (descontos e produtos) cadastradas por empresas parceiras e recebem um cupom com código único por e-mail para usar na troca presencial.
 
 ---
 
