@@ -1,0 +1,96 @@
+@startuml SD07_ResgatarVantagem
+!include ../estilo.iuml
+title SD07 — Resgatar vantagem (US07)\n<size:11>Gera o cupom e envia os e-mails ao aluno e à empresa parceira</size>
+
+actor "Aluno" as A
+box "View (React)" #EFF6FF
+  boundary "CatalogoVantagens" as PG
+end box
+box "Controller" #F5F3FF
+  control "AutenticacaoInterceptor" as INT
+  control "ResgateController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "VantagemResgateService" as RS
+  control "AlunoService\nVantagemService" as SV
+  control "NotificacaoEmailService" as NS
+end box
+box "Model" #F0FDF4
+  entity "a : Aluno" as AL
+  entity "v : Vantagem" as VAN
+  entity "r : ResgateVantagem" as RES
+end box
+box "Repository" #FFF7ED
+  database "AlunoRepository\nVantagemRepository" as REP
+  database "ResgateVantagemRepository" as RR
+end box
+participant "Servidor SMTP" as SMTP
+actor "Empresa\nParceira" as E
+
+A -> PG : abre /aluno/vantagens
+activate PG
+PG -> CTRL : GET /api/vantagens · GET /api/alunos/me
+activate CTRL
+note right of CTRL : VantagemController e AlunoController:\ncatálogo e saldo do aluno
+CTRL --> PG : 200 List<VantagemResponseDTO>, AlunoResponseDTO
+deactivate CTRL
+PG --> A : catálogo com fotos, custo e estoque
+
+A -> PG : escolhe a vantagem e confirma o resgate
+PG -> INT : POST /api/resgates { vantagemId }
+activate INT
+INT -> INT : sessão válida e\n@PerfilPermitido(ALUNO)
+INT -> CTRL : resgatar(usuarioLogado, ResgateRequestDTO)
+deactivate INT
+activate CTRL
+CTRL -> RS : resgatar(alunoId, vantagemId)
+activate RS
+note right of RS : @Transactional
+RS -> SV : alunoService.buscarPorId(alunoId)\nvantagemService.buscarPorId(vantagemId)
+activate SV
+SV -> REP : findById(...)
+REP --> SV : Aluno, Vantagem
+SV --> RS : a, v
+deactivate SV
+loop até gerar um código inédito
+  RS -> RS : gerarCodigoCupomUnico()\n"TKN-XXXX-XXXX" (SecureRandom)
+  RS -> RR : existsByCodigoCupom(codigo)
+  RR --> RS : boolean
+end
+
+RS -> AL : resgatarVantagem(v, codigo)
+activate AL
+AL -> VAN : verificarDisponibilidade()
+VAN --> AL : quantidade > 0
+alt vantagem esgotada ou saldo insuficiente
+  AL --> RS : <<exception>> RegraNegocioException
+  RS --> CTRL : (rollback)
+  CTRL --> PG : 422 { erro }
+  PG --> A : exibe a mensagem
+else disponível e saldo suficiente
+  AL -> AL : debitarMoedas(v.custo)
+  AL -> VAN : reduzirEstoque()
+  create RES
+  AL -> RES : new ResgateVantagem(codigo, a, v, custo, motivo)
+  AL --> RS : r
+  deactivate AL
+  RS -> RR : save(r)
+  RS -> RS : publishEvent(VantagemResgatadaEvent)
+  RS --> CTRL : r
+  deactivate RS
+  note over RS, RR : commit: saldo, estoque e resgate gravados juntos;\n@Version evita gasto duplo de saldo e de estoque
+  CTRL --> PG : 201 Created ResgateResponseDTO
+  deactivate CTRL
+  PG --> A : exibe o cupom gerado (CodigoCupom)
+
+  == Após o commit (@TransactionalEventListener AFTER_COMMIT + @Async) ==
+  RS ->> NS : notificarResgate(VantagemResgatadaEvent)
+  activate NS
+  NS ->> SMTP : send("[TOKEN] Seu cupom TKN-... ")
+  SMTP ->> A : e-mail com o código do cupom
+  NS ->> SMTP : send("[TOKEN] Novo resgate: cupom TKN-...")
+  deactivate NS
+  SMTP ->> E : e-mail com o código para conferência
+end
+deactivate PG
+@enduml

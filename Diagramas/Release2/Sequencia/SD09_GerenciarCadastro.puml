@@ -1,0 +1,88 @@
+@startuml SD09_GerenciarCadastro
+!include ../estilo.iuml
+title SD09 — Consultar, editar e excluir o próprio cadastro (US02 / US03)\n<size:11>Fluxo do aluno; o da empresa (PerfilEmpresa → /api/empresas/me → EmpresaService) é análogo</size>
+
+actor "Aluno" as A
+box "View (React)" #EFF6FF
+  boundary "PerfilAluno\n+ AlunoForm" as PG
+  control "AuthContext" as AC
+end box
+box "Controller" #F5F3FF
+  control "AlunoController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "AlunoService" as AS
+end box
+box "Model" #F0FDF4
+  entity "a : Aluno" as AL
+end box
+box "Repository" #FFF7ED
+  database "AlunoRepository" as AR
+  database "UsuarioRepository" as UR
+  database "TransacaoRepository\nResgateVantagemRepository" as HR
+end box
+
+A -> PG : abre /aluno/perfil
+activate PG
+PG -> CTRL : GET /api/alunos/me
+activate CTRL
+note right of CTRL : AutenticacaoInterceptor:\n@PerfilPermitido(ALUNO)
+CTRL -> AS : buscarPorId(id da sessão)
+AS -> AR : findById(id)
+AR --> AS : a
+AS --> CTRL : a
+CTRL --> PG : 200 AlunoResponseDTO
+deactivate CTRL
+PG --> A : formulário preenchido
+
+alt editar cadastro
+  A -> PG : altera os dados (senha opcional)
+  PG -> CTRL : PUT /api/alunos/me (AlunoRequestDTO)
+  activate CTRL
+  CTRL -> AS : atualizar(id, dto)
+  activate AS
+  AS -> AR : findById(id)
+  AR --> AS : a
+  AS -> UR : existsByLogin / existsByEmail / existsPessoaByCpf\n(somente se o valor mudou)
+  UR --> AS : boolean
+  alt conflito com outro usuário
+    AS --> CTRL : <<exception>> RegraNegocioException
+    CTRL --> PG : 422 { erro }
+  else sem conflito
+    AS -> AL : setNome, setEmail, setLogin, setCpf, setRg,\nsetEndereco, setInstituicao, setCurso, setMatricula
+    opt nova senha informada
+      AS -> AL : alterarSenha(novaSenha)\n(novo hash BCrypt)
+    end
+    AS -> AR : save(a)
+    AS --> CTRL : a
+    deactivate AS
+    CTRL -> CTRL : atualiza UsuarioLogado na sessão
+    CTRL --> PG : 200 AlunoResponseDTO
+    deactivate CTRL
+    PG -> AC : atualizarUsuario(nome, login)
+    PG --> A : "Cadastro atualizado"
+  end
+else excluir conta
+  A -> PG : confirma a exclusão (ZonaDePerigo)
+  PG -> CTRL : DELETE /api/alunos/me
+  activate CTRL
+  CTRL -> AS : excluir(id)
+  activate AS
+  AS -> HR : existsByAlunoId(id)
+  HR --> AS : boolean
+  alt possui transações ou resgates
+    AS --> CTRL : <<exception>> RegraNegocioException
+    CTRL --> PG : 422 { erro: histórico preservado para auditoria }
+    PG --> A : exibe a mensagem
+  else sem histórico
+    AS -> AR : delete(a)
+    deactivate AS
+    CTRL -> CTRL : sessao.invalidate()
+    CTRL --> PG : 204 No Content
+    deactivate CTRL
+    PG -> AC : encerrarLocalmente()
+    PG --> A : volta para a tela de login
+  end
+end
+deactivate PG
+@enduml

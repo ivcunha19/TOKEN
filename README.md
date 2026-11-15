@@ -6,19 +6,98 @@ O **TOKEN** (*Talent & Outstanding Knowledge Educational Network*) permite que p
 
 ---
 
+## Aplicação online
+
+| | Endereço |
+|---|---|
+| Aplicação (front-end no Vercel) | _preencher após o deploy_ — `https://<projeto>.vercel.app` |
+| API (back-end no Render) | _preencher após o deploy_ — `https://token-moeda-estudantil.onrender.com/api/instituicoes` |
+
+> O back-end usa o plano gratuito do Render, que hiberna após 15 minutos sem uso. O primeiro acesso depois disso leva cerca de 1 minuto. Como implantar: [Implantação na nuvem](#implantação-na-nuvem-vercel--render).
+
+---
+
 ## Modelagem do Sistema
 
-### Diagrama de Classes
+Os diagramas da **Release 1** (classes, componentes, ER e casos de uso) foram feitos no draw.io. Os da **Release 2** (sequência, visão geral de interação e implantação) estão em PlantUML na pasta [`Diagramas/Release2`](Diagramas/Release2): o `.puml` é o fonte editável e o `.png` é a imagem gerada. Depois de editar um `.puml`, gere as imagens de novo com `docker compose run --rm diagramas`.
+
+### Release 1
+
+#### Diagrama de Classes
 ![Diagrama de Classes](Diagramas/DiagramaDeClassesTOKEN.png)
 
-### Diagrama de Componentes
+#### Diagrama de Componentes
 ![Diagrama de Componentes](Diagramas/DiagramaDeComponentesTOKEN.png)
 
-### Modelo Entidade-Relacionamento (ER)
+#### Modelo Entidade-Relacionamento (ER)
 ![Diagrama ER](Diagramas/DiagramaER_TOKEN.png)
 
-### Diagrama de Casos de Uso
+#### Diagrama de Casos de Uso
 Consulte o arquivo [Diagrama_Casos_de_Uso.drawio.pdf](Diagramas/Diagrama_Casos_de_Uso.drawio.pdf).
+
+### Release 2
+
+#### Diagrama de Visão Geral de Interação
+
+Mostra a ordem em que as interações acontecem: cadastro (se o usuário ainda não tem conta), login e as ações disponíveis para cada perfil. Cada nó **ref** aponta para um diagrama de sequência abaixo.
+
+![Diagrama de Visão Geral de Interação](Diagramas/Release2/VisaoGeralInteracao/VisaoGeralInteracao.png)
+
+#### Diagramas de Sequência
+
+Os participantes são as classes reais do código, agrupadas pelas camadas do MVC: View (React), Controller, Service, Model e Repository.
+
+| Diagrama | Caso de uso | História |
+|----------|-------------|----------|
+| [SD01 — Realizar login](#sd01--realizar-login) | Realizar login (e crédito semestral do professor) | US01 |
+| [SD02 — Cadastrar aluno](#sd02--cadastrar-aluno) | Realizar cadastro (aluno) | US02 |
+| [SD03 — Cadastrar empresa parceira](#sd03--cadastrar-empresa-parceira) | Realizar cadastro (empresa) | US03 |
+| [SD04 — Cadastrar vantagem](#sd04--cadastrar-vantagem) | Cadastrar vantagens | US04 |
+| [SD05 — Enviar moedas](#sd05--enviar-moedas) | Distribuir moedas aos alunos · Receber moedas · Receber notificações | US05 |
+| [SD06 — Consultar extrato](#sd06--consultar-extrato) | Consultar saldo · Visualizar transações | US06 |
+| [SD07 — Resgatar vantagem](#sd07--resgatar-vantagem) | Resgatar vantagens · Enviar notificações à empresa parceira | US07 |
+| [SD08 — Conferir e utilizar cupom](#sd08--conferir-e-utilizar-cupom) | Conferir cupom (empresa) | US07 |
+| [SD09 — Gerenciar o próprio cadastro](#sd09--gerenciar-o-próprio-cadastro) | Editar e excluir cadastro (aluno e empresa) | US02 · US03 |
+
+##### SD01 — Realizar login
+![SD01 — Realizar login](Diagramas/Release2/Sequencia/SD01_RealizarLogin.png)
+
+##### SD02 — Cadastrar aluno
+![SD02 — Cadastrar aluno](Diagramas/Release2/Sequencia/SD02_CadastrarAluno.png)
+
+##### SD03 — Cadastrar empresa parceira
+![SD03 — Cadastrar empresa parceira](Diagramas/Release2/Sequencia/SD03_CadastrarEmpresa.png)
+
+##### SD04 — Cadastrar vantagem
+![SD04 — Cadastrar vantagem](Diagramas/Release2/Sequencia/SD04_CadastrarVantagem.png)
+
+##### SD05 — Enviar moedas
+![SD05 — Enviar moedas](Diagramas/Release2/Sequencia/SD05_EnviarMoedas.png)
+
+##### SD06 — Consultar extrato
+![SD06 — Consultar extrato](Diagramas/Release2/Sequencia/SD06_ConsultarExtrato.png)
+
+##### SD07 — Resgatar vantagem
+![SD07 — Resgatar vantagem](Diagramas/Release2/Sequencia/SD07_ResgatarVantagem.png)
+
+##### SD08 — Conferir e utilizar cupom
+![SD08 — Conferir e utilizar cupom](Diagramas/Release2/Sequencia/SD08_ConferirCupom.png)
+
+##### SD09 — Gerenciar o próprio cadastro
+![SD09 — Gerenciar o próprio cadastro](Diagramas/Release2/Sequencia/SD09_GerenciarCadastro.png)
+
+#### Diagrama de Implantação
+
+![Diagrama de Implantação](Diagramas/Release2/Implantacao/DiagramaImplantacao.png)
+
+| Nó | O que roda | Comunicação |
+|----|------------|-------------|
+| Navegador do usuário | SPA React (build do Vite) | HTTPS com o domínio do Vercel |
+| **Vercel** (CDN) | Arquivos estáticos de `frontend/dist`; rewrite de `/api/**` para o Render (`frontend/vercel.json`) | HTTPS (proxy reverso) até o Render |
+| **Render** – Web Service | Contêiner Docker com o `token-1.0.0.jar` (Spring Boot, perfil `prod`) | JDBC até o PostgreSQL; SMTP até o servidor de e-mail |
+| **Render** – PostgreSQL 16 | Banco `tokendb` (tabelas criadas pelo Hibernate) | Rede privada do Render |
+| Servidor SMTP externo | Mailtrap ou Brevo (opcional) | SMTP porta 2525 com STARTTLS |
+| GitHub | Repositório | Cada push na `main` dispara o deploy no Vercel e no Render |
 
 ---
 
@@ -34,6 +113,8 @@ Consulte o arquivo [Diagrama_Casos_de_Uso.drawio.pdf](Diagramas/Diagrama_Casos_d
 | US06 | **Consulta de Extrato.** Como aluno ou professor, quero consultar meu saldo atual e o histórico de transações para acompanhar minhas movimentações de moedas. | ✅ |
 | US07 | **Resgate de Vantagem.** Como aluno, quero trocar minhas moedas por uma vantagem disponível e receber por e-mail um cupom com código único (também enviado à empresa parceira) para usá-lo presencialmente. | ✅ |
 
+**Release 2:** todos os casos de uso do diagrama estão implementados. Os casos que surgiram durante o desenvolvimento (conferir/utilizar cupom pela empresa e editar/excluir o próprio cadastro) também estão prontos. A tabela dos [diagramas de sequência](#diagramas-de-sequência) mostra qual diagrama detalha cada caso de uso.
+
 ---
 
 ## Tecnologias
@@ -42,14 +123,15 @@ Detalhes, versões e o papel de cada tecnologia: **[STACK.md](STACK.md)**.
 
 | Camada | Tecnologia |
 |--------|-----------|
-| View (front-end) | React 19 + React Router, Vite, Tailwind CSS 4 (SPA empacotada dentro do jar do Spring Boot) |
+| View (front-end) | React 19 + React Router, Vite, Tailwind CSS 4 (SPA servida pelo Vercel na nuvem; no Docker local, empacotada dentro do jar do Spring Boot) |
 | Testes | Vitest + Testing Library (front-end), JUnit 5 + MockMvc (back-end) |
 | Controller | Spring Web MVC (API REST), Bean Validation (inclusive `@CPF` e `@CNPJ`) |
 | Model / Service | Java 21, Spring Boot 3.5 |
-| Persistência | Spring Data JPA + Hibernate (ORM), padrão Repository/DAO, banco H2 em arquivo |
+| Persistência | Spring Data JPA + Hibernate (ORM), padrão Repository/DAO; H2 em arquivo (local) e PostgreSQL 16 (nuvem) |
 | Segurança | Sessão HTTP, senhas com hash **BCrypt**, controle de acesso por perfil (`@PerfilPermitido`) |
-| E-mail | Spring Mail (SMTP), envio assíncrono após o commit da transação; Mailpit no ambiente Docker |
-| Infraestrutura | Docker e Docker Compose |
+| E-mail | Spring Mail (SMTP), envio assíncrono após o commit da transação; Mailpit no ambiente Docker, Mailtrap/Brevo na nuvem |
+| Infraestrutura | Docker e Docker Compose (local); **Vercel** (front-end) + **Render** (back-end e PostgreSQL) na nuvem |
+| Modelagem | draw.io (Release 1); PlantUML (Release 2: sequência, visão geral de interação e implantação) |
 
 ## Arquitetura (MVC em camadas)
 
@@ -110,6 +192,7 @@ Outros comandos:
 docker compose run --rm testes            # testes do back-end (JUnit + MockMvc)
 docker compose run --rm testes-front      # testes do front-end (Vitest + Testing Library)
 docker compose --profile dev up --build   # front com hot reload em http://localhost:5173
+docker compose run --rm diagramas         # gera os PNGs dos diagramas .puml (Diagramas/Release2)
 docker compose down                       # para os containers (mantém o banco)
 docker compose down -v                    # para e APAGA o banco (volta aos dados iniciais)
 ```
@@ -139,6 +222,52 @@ Requer Java 21, Maven e Node 22 instalados:
 2. Front-end: `cd frontend && npm install && npm run dev`. Abra http://localhost:5173; o Vite encaminha `/api` para a porta 8080.
 
 Sem um servidor SMTP local, os e-mails falham e o erro aparece apenas no log; as operações continuam funcionando normalmente.
+
+---
+
+## Implantação na nuvem (Vercel + Render)
+
+O front-end fica no **Vercel** e o back-end, junto com o banco PostgreSQL, fica no **Render**. O [diagrama de implantação](#diagrama-de-implantação) mostra os nós.
+
+**Como o login funciona entre os dois:** o navegador só acessa o domínio do Vercel. O `frontend/vercel.json` tem um *rewrite* que repassa `/api/**` ao Render, e esse repasse acontece no servidor do Vercel. Para o navegador, front e API estão na mesma origem, então o cookie de sessão (`JSESSIONID`) continua funcionando sem CORS, como no Docker local. Por isso não foi preciso mudar a autenticação.
+
+| Arquivo | Função |
+|---------|--------|
+| [`render.yaml`](render.yaml) | Blueprint do Render: Web Service Docker (usa o mesmo `Dockerfile` da raiz) + PostgreSQL 16 gratuito |
+| [`frontend/vercel.json`](frontend/vercel.json) | Build do Vite, rewrite de `/api/**` para o Render e fallback das rotas do React para o `index.html` |
+| [`application-prod.properties`](token/src/main/resources/application-prod.properties) | Perfil `prod`: PostgreSQL, cookie `Secure`, cabeçalhos de proxy e SMTP com autenticação |
+
+### Passo a passo
+
+**1. Back-end e banco no Render**
+1. Entre em https://dashboard.render.com com a conta do GitHub.
+2. Clique em **New › Blueprint** e escolha este repositório. O Render lê o `render.yaml` e cria o serviço `token-moeda-estudantil` e o banco `token-db`.
+3. O Render pede `MAIL_USERNAME` e `MAIL_PASSWORD`. Pode deixar em branco por enquanto (veja o passo 3).
+4. Espere o primeiro deploy terminar (cerca de 10 min, porque compila o React e o Java). Depois, abra `https://<serviço>.onrender.com/api/instituicoes`: deve aparecer a lista de instituições em JSON.
+5. Anote a URL do serviço. Se o Render tiver acrescentado um sufixo ao nome, ela será diferente de `token-moeda-estudantil.onrender.com`.
+
+**2. Front-end no Vercel**
+1. Se a URL do passo 1.5 for diferente, corrija o `destination` em `frontend/vercel.json` e faça o push.
+2. Entre em https://vercel.com com a conta do GitHub, clique em **Add New › Project** e importe o repositório.
+3. Em **Root Directory**, escolha `frontend`. O resto (Vite, `npm run build`, pasta `dist`) já vem do `vercel.json`.
+4. Clique em **Deploy** e abra a URL `https://<projeto>.vercel.app`. Os [usuários de demonstração](#usuários-de-demonstração) já existem, porque o `DataSeeder` popula o banco vazio.
+5. Coloque as duas URLs na seção [Aplicação online](#aplicação-online).
+
+**3. E-mails na nuvem (opcional)**
+
+No Docker local, os e-mails vão para o Mailpit. Na nuvem é preciso um servidor SMTP de verdade. Sugestão: **Mailtrap › Email Testing** (gratuito). Ele guarda os e-mails numa caixa web, como o Mailpit, e não entrega a ninguém de fato.
+1. Crie uma inbox no Mailtrap e copie o *username* e a *password* do SMTP.
+2. No Render, abra **token-moeda-estudantil › Environment** e preencha `MAIL_USERNAME`, `MAIL_PASSWORD` e `EMAIL_HABILITADO=true`. O `MAIL_HOST` (`sandbox.smtp.mailtrap.io`) e a `MAIL_PORT` (`2525`) já vêm do `render.yaml`.
+3. Salve. O Render reinicia o serviço.
+
+A porta 2525 foi escolhida porque o plano gratuito do Render pode bloquear as portas SMTP tradicionais (25, 465 e 587). Com `EMAIL_HABILITADO=false`, as operações funcionam normalmente e o e-mail só aparece no log.
+
+### Limitações do plano gratuito
+- **Hibernação:** o Web Service dorme após 15 min sem acesso, e a primeira requisição depois disso leva cerca de 1 minuto. Enquanto isso, o front mostra *"O servidor está iniciando..."*. Antes de uma apresentação, abra o site alguns minutos antes.
+- **Banco:** o PostgreSQL gratuito do Render expira 30 dias após a criação. Para continuar depois disso, crie outro banco (ou use um plano pago) e atualize as variáveis `DB_*` do serviço.
+- **Deploy automático:** cada push na `main` gera um novo deploy no Render e no Vercel.
+
+Para testar o perfil `prod` localmente (com um PostgreSQL em Docker), defina `SPRING_PROFILES_ACTIVE=prod`, as variáveis `DB_HOST`, `DB_NAME`, `DB_USER` e `DB_PASSWORD`, e `COOKIE_SECURE=false` (porque o acesso local é por HTTP).
 
 ---
 

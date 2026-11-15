@@ -1,0 +1,75 @@
+@startuml SD04_CadastrarVantagem
+!include ../estilo.iuml
+title SD04 — Cadastrar vantagem (US04)
+
+actor "Empresa\nParceira" as E
+box "View (React)" #EFF6FF
+  boundary "MinhasVantagens\n+ VantagemForm" as PG
+end box
+box "Controller" #F5F3FF
+  control "AutenticacaoInterceptor" as INT
+  control "VantagemController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "VantagemService" as VS
+  control "EmpresaService" as ES
+end box
+box "Model" #F0FDF4
+  entity "e : Empresa" as EMP
+  entity "v : Vantagem" as VAN
+end box
+box "Repository" #FFF7ED
+  database "EmpresaRepository" as ER
+  database "VantagemRepository" as VR
+end box
+
+E -> PG : clica em "Nova vantagem" e informa nome,\ndescrição, custo (moedas), estoque e foto
+activate PG
+PG -> INT : POST /api/vantagens\n(multipart/form-data)
+activate INT
+INT -> INT : sessão válida e\n@PerfilPermitido(EMPRESA)
+INT -> CTRL : cadastrar(usuarioLogado, VantagemRequestDTO)
+deactivate INT
+activate CTRL
+CTRL -> CTRL : @Valid (nome, descrição, custo >= 1, quantidade >= 0)
+CTRL -> VS : criar(empresaId, dto)
+activate VS
+VS -> VS : validarFoto(foto)\n(PNG/JPEG/WEBP/GIF, até 2 MB)
+
+alt foto ausente ou inválida
+  VS --> CTRL : <<exception>> RegraNegocioException
+  CTRL --> PG : 422 { erro }
+  PG --> E : exibe a mensagem
+else foto válida
+  VS -> ES : buscarPorId(empresaId)
+  activate ES
+  ES -> ER : findById(empresaId)
+  ER --> ES : Empresa
+  ES --> VS : e
+  deactivate ES
+  VS -> EMP : cadastrarVantagem(nome, descricao, custo,\nfoto, fotoTipo, quantidade)
+  activate EMP
+  create VAN
+  EMP -> VAN : new Vantagem(..., empresa = this)
+  EMP -> EMP : listaVantagem.add(v)
+  EMP --> VS : v
+  deactivate EMP
+  VS -> VR : save(v)
+  VR --> VS : Vantagem (com id)
+  VS --> CTRL : v
+  deactivate VS
+  CTRL --> PG : 201 Created VantagemResponseDTO
+  deactivate CTRL
+  PG -> CTRL : GET /api/vantagens/minhas
+  activate CTRL
+  CTRL --> PG : 200 List<VantagemResponseDTO>
+  deactivate CTRL
+  PG --> E : exibe a vantagem no catálogo da empresa
+end
+deactivate PG
+
+note over CTRL, VS
+  Editar (PUT /api/vantagens/{id}) e excluir (DELETE) seguem o mesmo caminho;
+  a exclusão é bloqueada se a vantagem já tiver resgates.
+end note
+@enduml
