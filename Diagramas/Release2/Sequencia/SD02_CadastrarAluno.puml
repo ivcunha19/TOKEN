@@ -1,0 +1,88 @@
+@startuml SD02_CadastrarAluno
+!include ../estilo.iuml
+title SD02 — Realizar cadastro de aluno (US02)
+
+actor "Aluno" as A
+box "View (React)" #EFF6FF
+  boundary "CadastroAlunoPage\n+ AlunoForm" as PG
+  control "AuthContext" as AC
+end box
+box "Controller" #F5F3FF
+  control "CatalogoController" as CC
+  control "AlunoController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "AlunoService" as AS
+  control "InstituicaoService" as IS
+end box
+box "Model" #F0FDF4
+  entity "a : Aluno" as AL
+  entity "i : Instituicao" as INS
+end box
+box "Repository" #FFF7ED
+  database "UsuarioRepository" as UR
+  database "InstituicaoRepository" as IR
+  database "AlunoRepository" as AR
+end box
+
+A -> PG : acessa /cadastro/aluno
+activate PG
+PG -> CC : GET /api/instituicoes
+activate CC
+CC -> IS : listarTodas()
+activate IS
+IS -> IR : findAll()
+IR --> IS : List<Instituicao>
+IS --> CC : List<Instituicao>
+deactivate IS
+CC --> PG : 200 instituições pré-cadastradas
+PG -> CC : GET /api/cursos
+CC --> PG : 200 ECurso.values()
+deactivate CC
+PG --> A : exibe o formulário
+
+A -> PG : preenche nome, e-mail, CPF, RG, endereço,\ninstituição, curso, login e senha
+PG -> PG : valida campos e dígitos do CPF\n(lib/documentos.js)
+PG -> CTRL : POST /api/alunos (AlunoRequestDTO)
+activate CTRL
+CTRL -> CTRL : @Valid (Bean Validation, @CPF, @Email)
+
+alt dados inválidos
+  CTRL --> PG : 400 { erro, campos }
+  PG --> A : destaca os campos com erro
+else dados válidos
+  CTRL -> AS : criar(dto)
+  activate AS
+  AS -> UR : existsByLogin(login)\nexistsByEmail(email)\nexistsPessoaByCpf(cpf)
+  activate UR
+  UR --> AS : boolean
+  deactivate UR
+  alt login, e-mail ou CPF já cadastrado
+    AS --> CTRL : <<exception>> RegraNegocioException
+    CTRL --> PG : 422 { erro }
+    PG --> A : exibe a mensagem
+  else dados únicos
+    AS -> IS : buscarPorId(instituicaoId)
+    activate IS
+    IS -> IR : findById(instituicaoId)
+    IR --> IS : Instituicao
+    IS --> AS : i
+    deactivate IS
+    create AL
+    AS -> AL : new Aluno(nome, senha, login, email, cpf, i,\nrg, endereco, curso, matricula)
+    note right of AL : a senha é gravada como hash BCrypt;\nsaldo inicial = 0
+    AS -> INS : vincularAluno(a)
+    AS -> AR : save(a)
+    activate AR
+    AR --> AS : Aluno (com id)
+    deactivate AR
+    AS --> CTRL : a
+    deactivate AS
+    CTRL --> PG : 201 Created AlunoResponseDTO
+    deactivate CTRL
+    ref over PG, AC, CTRL : SD01 — Realizar login (entrar(login, senha) automático)
+    PG --> A : redireciona para /aluno
+  end
+end
+deactivate PG
+@enduml

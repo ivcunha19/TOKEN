@@ -13,6 +13,10 @@ export class ApiError extends Error {
   }
 }
 
+const SERVIDOR_INDISPONIVEL = [502, 503, 504];
+export const MENSAGEM_SERVIDOR_INICIANDO =
+  'O servidor está iniciando (pode levar cerca de 1 minuto após um período sem uso). Tente novamente em instantes.';
+
 let aoPerderSessao = null;
 
 /** Registra quem deve ser avisado quando a API responder 401 (sessão expirada). */
@@ -43,6 +47,10 @@ export async function api(url, { method = 'GET', json, form, signal } = {}) {
   if (!resposta.ok) {
     if (resposta.status === 401 && !url.startsWith('/api/auth/') && aoPerderSessao) {
       aoPerderSessao();
+    }
+    // Na nuvem, o proxy do Vercel responde 502/503/504 enquanto o back-end do Render "acorda"
+    if (!dados?.erro && SERVIDOR_INDISPONIVEL.includes(resposta.status)) {
+      throw new ApiError(MENSAGEM_SERVIDOR_INICIANDO, resposta.status);
     }
     throw new ApiError(
       dados?.erro || `Erro ${resposta.status} ao comunicar com o servidor.`,

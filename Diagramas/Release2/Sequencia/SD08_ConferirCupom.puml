@@ -1,0 +1,88 @@
+@startuml SD08_ConferirCupom
+!include ../estilo.iuml
+title SD08 — Conferir e utilizar cupom (Empresa parceira)
+
+actor "Empresa\nParceira" as E
+box "View (React)" #EFF6FF
+  boundary "CuponsEmpresa" as PG
+end box
+box "Controller" #F5F3FF
+  control "AutenticacaoInterceptor" as INT
+  control "ResgateController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "VantagemResgateService" as RS
+  control "EmpresaService" as ES
+end box
+box "Model" #F0FDF4
+  entity "e : Empresa" as EMP
+  entity "r : ResgateVantagem" as RES
+end box
+box "Repository" #FFF7ED
+  database "EmpresaRepository" as ER
+  database "ResgateVantagemRepository" as RR
+end box
+
+E -> PG : digita o código apresentado pelo aluno
+activate PG
+PG -> INT : GET /api/resgates/cupom/{codigo}
+activate INT
+INT -> INT : sessão válida e\n@PerfilPermitido(EMPRESA)
+INT -> CTRL : conferirCupom(usuarioLogado, codigo)
+deactivate INT
+activate CTRL
+CTRL -> RS : conferirCupom(empresaId, codigo)
+activate RS
+RS -> RS : normalizar(codigo)\n(trim + maiúsculas)
+RS -> ES : buscarPorId(empresaId)
+activate ES
+ES -> ER : findById(empresaId)
+ER --> ES : Empresa
+ES --> RS : e
+deactivate ES
+RS -> EMP : conferirCupom(codigo)
+activate EMP
+EMP -> EMP : percorre listaVantagem → resgates\nprocurando o código
+EMP --> RS : boolean
+deactivate EMP
+
+alt código não pertence às vantagens da empresa
+  RS --> CTRL : <<exception>> RecursoNaoEncontradoException
+  CTRL --> PG : 404 { erro }
+  PG --> E : "Cupom não encontrado"
+else cupom da empresa
+  RS -> RR : findByCodigoCupom(codigo)
+  RR --> RS : r
+  RS --> CTRL : r
+  deactivate RS
+  CTRL --> PG : 200 ResgateResponseDTO
+  deactivate CTRL
+  PG --> E : exibe aluno, vantagem, data e situação do cupom
+
+  opt cupom ainda não utilizado: empresa realiza a troca presencial
+    E -> PG : clica em "Marcar como utilizado"
+    PG -> CTRL : POST /api/resgates/cupom/{codigo}/utilizar
+    activate CTRL
+    CTRL -> RS : registrarUtilizacao(empresaId, codigo)
+    activate RS
+    ref over RS, ES, EMP, RR : conferirCupom(empresaId, codigo) — mesma conferência feita acima
+    RS -> RES : registrarUtilizacao()
+    activate RES
+    alt cupom já utilizado
+      RES --> RS : <<exception>> RegraNegocioException
+      RS --> CTRL : (rollback)
+      CTRL --> PG : 422 { erro: "Este cupom já foi utilizado em ..." }
+    else primeira utilização
+      RES -> RES : utilizado = true\ndataUtilizacao = agora
+      deactivate RES
+      RS -> RR : save(r)
+      RS --> CTRL : r
+      deactivate RS
+      CTRL --> PG : 200 ResgateResponseDTO (utilizado)
+      deactivate CTRL
+      PG --> E : cupom marcado como utilizado
+    end
+  end
+end
+deactivate PG
+@enduml

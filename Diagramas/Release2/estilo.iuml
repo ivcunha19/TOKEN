@@ -1,0 +1,31 @@
+' Estilo comum dos diagramas da Release 2 (incluído com !include estilo.iuml)
+skinparam dpi 130
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam ArrowColor #334155
+skinparam SequenceLifeLineBorderColor #94A3B8
+skinparam SequenceGroupBorderColor #64748B
+skinparam SequenceGroupHeaderFontStyle bold
+skinparam SequenceDividerBackgroundColor #F1F5F9
+skinparam SequenceReferenceBackgroundColor #F8FAFC
+skinparam ParticipantBorderColor #475569
+skinparam ParticipantBackgroundColor #F8FAFC
+skinparam ActorBorderColor #475569
+skinparam ActorBackgroundColor #FEF3C7
+skinparam BoundaryBorderColor #2563EB
+skinparam BoundaryBackgroundColor #DBEAFE
+skinparam ControlBorderColor #7C3AED
+skinparam ControlBackgroundColor #EDE9FE
+skinparam EntityBorderColor #15803D
+skinparam EntityBackgroundColor #DCFCE7
+skinparam DatabaseBorderColor #B45309
+skinparam DatabaseBackgroundColor #FFEDD5
+skinparam NoteBackgroundColor #FFFBEB
+skinparam NoteBorderColor #D97706
+skinparam BoxPadding 8
+skinparam ParticipantPadding 6
+skinparam maxMessageSize 220
+autonumber "<b>0."
+hide footbox

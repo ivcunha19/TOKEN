@@ -1,0 +1,73 @@
+@startuml SD06_ConsultarExtrato
+!include ../estilo.iuml
+title SD06 — Consultar saldo e extrato (US06)
+
+actor "Aluno ou\nProfessor" as U
+box "View (React)" #EFF6FF
+  boundary "ExtratoPage" as PG
+end box
+box "Controller" #F5F3FF
+  control "AutenticacaoInterceptor" as INT
+  control "TransacaoController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "TransacaoMoedaService" as TS
+  control "ProfessorService\nAlunoService" as US
+end box
+box "Repository" #FFF7ED
+  database "ProfessorRepository\nAlunoRepository" as UR
+  database "TransacaoRepository" as TRR
+  database "ResgateVantagemRepository" as RR
+end box
+
+U -> PG : abre /aluno/extrato ou /professor/extrato
+activate PG
+PG -> INT : GET /api/extrato
+activate INT
+INT -> INT : sessão válida e\n@PerfilPermitido(ALUNO, PROFESSOR)
+INT -> CTRL : extrato(usuarioLogado)
+deactivate INT
+activate CTRL
+CTRL -> TS : gerarExtrato(usuarioLogado)
+activate TS
+note right of TS : @Transactional(readOnly = true)
+
+alt tipo = PROFESSOR
+  TS -> US : buscarPorId(id)
+  US -> UR : findById(id)
+  UR --> US : Professor
+  US --> TS : professor (saldo)
+  TS -> TRR : findByProfessorIdOrderByDataHoraDesc(id)
+  TRR --> TS : List<Transacao>
+  loop para cada transação
+    TS -> TS : new ItemExtratoDTO("ENVIO", -valor,\nmotivo, nomeAluno, dataHora)
+  end
+else tipo = ALUNO
+  TS -> US : buscarPorId(id)
+  US -> UR : findById(id)
+  UR --> US : Aluno
+  US --> TS : aluno (saldo)
+  TS -> TRR : findByAlunoIdOrderByDataHoraDesc(id)
+  TRR --> TS : List<Transacao>
+  loop para cada transação
+    TS -> TS : new ItemExtratoDTO("RECEBIMENTO", +valor,\nmotivo, nomeProfessor, dataHora)
+  end
+  TS -> RR : findByAlunoIdOrderByDataHoraDesc(id)
+  RR --> TS : List<ResgateVantagem>
+  loop para cada resgate
+    TS -> TS : new ItemExtratoDTO("RESGATE", -valor,\nmotivo, nomeEmpresa, dataHora, codigoCupom)
+  end
+end
+
+TS -> TS : ordena os itens por dataHora (mais recentes primeiro)
+TS --> CTRL : ExtratoDTO(saldo, itens)
+deactivate TS
+CTRL --> PG : 200 ExtratoDTO
+deactivate CTRL
+PG --> U : exibe saldo, totais e histórico
+opt filtra por tipo ou período
+  U -> PG : seleciona o filtro
+  PG --> U : lista filtrada (no navegador, sem nova requisição)
+end
+deactivate PG
+@enduml

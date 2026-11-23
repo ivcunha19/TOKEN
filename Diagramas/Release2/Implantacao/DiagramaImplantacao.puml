@@ -1,0 +1,76 @@
+@startuml DiagramaImplantacao
+skinparam dpi 130
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam ArrowColor #334155
+skinparam NoteBackgroundColor #FFFBEB
+skinparam NoteBorderColor #D97706
+skinparam NodeBorderColor #475569
+skinparam NodeBackgroundColor #F8FAFC
+skinparam ArtifactBackgroundColor #FFFFFF
+skinparam ArtifactBorderColor #2563EB
+skinparam ComponentBackgroundColor #EDE9FE
+skinparam ComponentBorderColor #7C3AED
+skinparam DatabaseBackgroundColor #FFEDD5
+skinparam DatabaseBorderColor #B45309
+skinparam CloudBorderColor #64748B
+top to bottom direction
+title Diagrama de Implantação — TOKEN (Release 2, nuvem: Vercel + Render)
+
+node "Dispositivo do usuário\n<<device>>\n(computador ou celular)" as DEV {
+  node "Navegador web\n<<executionEnvironment>>" as NAV {
+    artifact "SPA React 19\n(index.html + assets JS/CSS)" as SPA_RT
+  }
+}
+
+cloud "Vercel" as VERCEL {
+  node "Vercel Edge Network (CDN)\n<<executionEnvironment>>" as EDGE {
+    artifact "frontend/dist\n(build do Vite)" as DIST
+    artifact "vercel.json\n<<deployment spec>>\nrewrite /api/* → Render\nfallback /* → index.html" as VJSON
+  }
+}
+
+cloud "Render (região Virginia, EUA)" as RENDER {
+  node "Web Service token-moeda-estudantil\n<<device>> instância Free · 512 MB" as WEB {
+    node "Contêiner Docker\n<<executionEnvironment>>\neclipse-temurin:21-jre" as CONT {
+      artifact "token-1.0.0.jar\n(Spring Boot 3.5 + Tomcat embutido)\nSPRING_PROFILES_ACTIVE=prod" as JAR {
+        component "Controllers REST\n+ AutenticacaoInterceptor" as C_CTRL
+        component "Services\n(Autenticacao, Aluno, Empresa,\nProfessor, Vantagem, Resgate,\nTransacaoMoeda, NotificacaoEmail)" as C_SERV
+        component "Repositories\n(Spring Data JPA / Hibernate)" as C_REPO
+      }
+    }
+  }
+  node "Render PostgreSQL 16\n<<device>> instância Free" as PGNODE {
+    database "tokendb\n(tabelas do modelo ER)" as DB
+  }
+}
+
+node "Servidor SMTP externo\n<<device>>\n(Mailtrap / Brevo)" as SMTP
+
+node "GitHub\n<<device>>\nrepositório TOKEN (branch main)" as GH
+
+NAV --> EDGE : HTTPS 443\nGET páginas e assets
+NAV --> EDGE : HTTPS 443 · /api/** (JSON, multipart)\ncookie JSESSIONID (mesma origem)
+EDGE --> CONT : HTTPS 443 · proxy reverso (rewrite)\n/api/** → https://token-moeda-estudantil.onrender.com
+C_CTRL --> C_SERV
+C_SERV --> C_REPO
+C_REPO --> DB : JDBC / TCP 5432\n(rede privada do Render)
+C_SERV ..> SMTP : SMTP 2525 + STARTTLS\n(@Async, após o commit)
+GH ..> VERCEL : push → build e deploy\nautomático (Root: frontend/)
+GH ..> RENDER : push → docker build\n(render.yaml + Dockerfile)
+
+note bottom of EDGE
+  O navegador só conversa com o domínio do Vercel.
+  O rewrite repassa /api/** ao Render no servidor,
+  então o cookie de sessão é de primeira parte
+  (sem CORS e sem cookie de terceiros).
+end note
+
+note bottom of WEB
+  O plano gratuito hiberna após 15 min sem uso;
+  a primeira requisição seguinte leva ~1 min.
+  Health check: GET /api/instituicoes
+end note
+@enduml

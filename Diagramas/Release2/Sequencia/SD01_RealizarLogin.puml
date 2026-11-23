@@ -1,0 +1,89 @@
+@startuml SD01_RealizarLogin
+!include ../estilo.iuml
+title SD01 — Realizar login (US01)\n<size:11>Inclui o crédito semestral de 1.000 moedas do professor</size>
+
+actor "Usuário\n(Aluno, Professor\nou Empresa)" as U
+box "View (React)" #EFF6FF
+  boundary "LoginPage" as LP
+  control "AuthContext" as AC
+end box
+box "Controller" #F5F3FF
+  control "AuthController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "AutenticacaoService" as AS
+  control "ProfessorService" as PS
+end box
+box "Model" #F0FDF4
+  entity "u : Usuario" as USU
+  entity "p : Professor" as PROF
+end box
+box "Repository" #FFF7ED
+  database "UsuarioRepository" as UR
+  database "ProfessorRepository" as PR
+end box
+
+U -> LP : informa login e senha
+activate LP
+LP -> AC : entrar(login, senha)
+activate AC
+AC -> CTRL : POST /api/auth/login\n{ login, senha }
+activate CTRL
+CTRL -> AS : autenticar(login, senha)
+activate AS
+AS -> UR : findByLogin(login)
+activate UR
+UR --> AS : Optional<Usuario>
+deactivate UR
+
+alt usuário encontrado
+  AS -> USU : autenticar(login, senha)
+  activate USU
+  USU -> USU : BCrypt.checkpw(senha, hash)
+  USU --> AS : boolean
+  deactivate USU
+end
+
+alt credenciais válidas
+  opt usuário é Professor
+    AS -> PS : creditarSemestreSeNecessario(p)
+    activate PS
+    PS -> PROF : receberMoedasSemestrais()
+    activate PROF
+    opt semestre atual ainda não creditado
+      PROF -> PROF : adicionarMoedas(1000)\nultimoSemestreCreditado = Semestre.atual()
+    end
+    PROF --> PS : creditado : boolean
+    deactivate PROF
+    opt creditado
+      PS -> PR : save(p)
+    end
+    deactivate PS
+  end
+  AS --> CTRL : UsuarioLogado(id, nome, login, tipo)
+  deactivate AS
+  CTRL -> CTRL : invalida a sessão antiga e cria nova\nsessao.setAttribute("usuarioLogado")
+  CTRL --> AC : 200 OK UsuarioLogado\nSet-Cookie: JSESSIONID
+  deactivate CTRL
+  AC --> LP : usuario
+  deactivate AC
+  LP --> U : redireciona ao painel do perfil\n(/aluno, /professor ou /empresa)
+else login inexistente ou senha incorreta
+  activate AS
+  AS --> CTRL : <<exception>> NaoAutenticadoException
+  deactivate AS
+  activate CTRL
+  CTRL --> AC : 401 { erro: "Login ou senha inválidos." }\n(ApiExceptionHandler)
+  deactivate CTRL
+  activate AC
+  AC --> LP : ApiError
+  deactivate AC
+  LP --> U : exibe a mensagem de erro
+end
+deactivate LP
+
+note over CTRL, AS
+  Nas requisições seguintes, o <b>AutenticacaoInterceptor</b> lê o
+  UsuarioLogado da sessão e confere o <b>@PerfilPermitido</b> de cada endpoint.
+end note
+@enduml

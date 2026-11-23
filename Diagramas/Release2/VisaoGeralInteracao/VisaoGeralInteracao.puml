@@ -1,0 +1,101 @@
+@startuml VisaoGeralInteracao
+skinparam dpi 130
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam ArrowColor #334155
+skinparam NoteBackgroundColor #FFFBEB
+skinparam NoteBorderColor #D97706
+skinparam ActivityBackgroundColor #F8FAFC
+skinparam ActivityBorderColor #475569
+skinparam ActivityDiamondBackgroundColor #FEF3C7
+skinparam ActivityDiamondBorderColor #B45309
+skinparam PartitionBorderColor #64748B
+skinparam PartitionBackgroundColor #FFFFFF
+title Diagrama de Visão Geral de Interação — TOKEN (Release 2)\n<size:11>Cada nó <b>ref</b> é uma ocorrência de interação detalhada no diagrama de sequência indicado</size>
+
+start
+if (Possui conta no TOKEN?) then (não)
+  if (Tipo de cadastro?) then (aluno)
+    #DBEAFE:<b>ref</b>
+    SD02 — Realizar cadastro de aluno]
+  else (empresa parceira)
+    #DBEAFE:<b>ref</b>
+    SD03 — Realizar cadastro de empresa]
+  endif
+  note right
+    Professores não se cadastram:
+    são pré-cadastrados pela instituição.
+  end note
+else (sim)
+endif
+
+#DBEAFE:<b>ref</b>
+SD01 — Realizar login]
+note right
+  Se o usuário for professor, o login
+  aplica o crédito semestral de 1.000 moedas.
+end note
+
+switch (UsuarioLogado.tipo?)
+case (ALUNO)
+  repeat
+    switch (Ação no painel do aluno?)
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD07 — Resgatar vantagem]
+      note right
+        O sistema envia o cupom por e-mail
+        ao aluno e à empresa (assíncrono).
+      end note
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD06 — Consultar saldo e extrato]
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD09 — Gerenciar o próprio cadastro]
+    endswitch
+  repeat while (Continuar usando?) is (sim)
+  -> não;
+case (PROFESSOR)
+  repeat
+    switch (Ação no painel do professor?)
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD05 — Enviar moedas]
+      note right
+        O aluno recebe a notificação
+        por e-mail (assíncrono).
+      end note
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD06 — Consultar saldo e extrato]
+    endswitch
+  repeat while (Continuar usando?) is (sim)
+  -> não;
+case (EMPRESA)
+  repeat
+    switch (Ação no painel da empresa?)
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD04 — Cadastrar vantagem]
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD08 — Conferir e utilizar cupom]
+    case ()
+      #DBEAFE:<b>ref</b>
+      SD09 — Gerenciar o próprio cadastro
+      (fluxo análogo ao do aluno)]
+    endswitch
+  repeat while (Continuar usando?) is (sim)
+  -> não;
+endswitch
+
+#EDE9FE:<b>sd</b> Logout
+Layout → AuthContext.sair()
+AuthContext → POST /api/auth/logout
+AuthController → sessao.invalidate()
+← 204 No Content;
+stop
+@enduml

@@ -4,6 +4,7 @@
 #   Testes do back-end:       docker compose run --rm testes
 #   Testes do front-end:      docker compose run --rm testes-front
 #   Front com hot reload:     docker compose --profile dev up --build   (abre em http://localhost:5173)
+#   Gerar PNGs dos diagramas: docker compose run --rm diagramas
 #   Parar:                    docker compose down        (adicione -v para apagar o banco)
 #
 #   Aplicação:                http://localhost:8080
@@ -73,6 +74,15 @@ services:
     volumes:
       - ./frontend:/app
       - front-node-modules:/app/node_modules
+
+  # Gera os PNGs dos diagramas da Release 2 a partir dos fontes PlantUML (.puml)
+  diagramas:
+    image: plantuml/plantuml:1.2024.8
+    profiles: ["diagramas"]
+    working_dir: /data
+    command: ["-tpng", "-charset", "UTF-8", "Sequencia/*.puml", "VisaoGeralInteracao/*.puml", "Implantacao/*.puml"]
+    volumes:
+      - ./Diagramas/Release2:/data
 
 volumes:
   token-data:

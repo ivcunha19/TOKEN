@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { api, ApiError, definirAoPerderSessao, endpoints } from './api';
+import { api, ApiError, definirAoPerderSessao, endpoints, MENSAGEM_SERVIDOR_INICIANDO } from './api';
 import { mockApi, resposta } from '../test/utils';
 
 describe('cliente da API', () => {
@@ -47,6 +47,14 @@ describe('cliente da API', () => {
   it('usa mensagem genérica quando a resposta de erro não tem corpo', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resposta(500)));
     await expect(api('/api/vantagens')).rejects.toThrow('Erro 500 ao comunicar com o servidor.');
+  });
+
+  it.each([502, 503, 504])('avisa que o servidor está iniciando quando o proxy responde %i', async (status) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resposta(status)));
+    const erro = await api('/api/vantagens').catch((e) => e);
+    expect(erro).toBeInstanceOf(ApiError);
+    expect(erro.status).toBe(status);
+    expect(erro.message).toBe(MENSAGEM_SERVIDOR_INICIANDO);
   });
 
   it('codifica o código do cupom na URL', async () => {

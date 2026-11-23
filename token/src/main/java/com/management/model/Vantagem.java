@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +39,13 @@ public class Vantagem {
     @Column(name = "QUANTIDADE", nullable = false)
     private int quantidade;
 
-    /** Foto do produto (bytes da imagem). */
+    /**
+     * Foto do produto (bytes da imagem). Mapeada como VARBINARY (e não @Lob) para virar
+     * BYTEA no PostgreSQL da nuvem e VARBINARY no H2 local, sem exigir transação na leitura.
+     */
     @JsonIgnore
-    @Lob
-    @Column(name = "FOTO")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Column(name = "FOTO", length = 5 * 1024 * 1024)
     private byte[] foto;
 
     /** Content-Type da foto (image/png, image/jpeg...). */

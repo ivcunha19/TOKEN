@@ -1,0 +1,93 @@
+@startuml SD05_EnviarMoedas
+!include ../estilo.iuml
+title SD05 — Enviar moedas a um aluno (US05)\n<size:11>Inclui a notificação por e-mail ao aluno</size>
+
+actor "Professor" as P
+box "View (React)" #EFF6FF
+  boundary "EnviarMoedas" as PG
+end box
+box "Controller" #F5F3FF
+  control "AutenticacaoInterceptor" as INT
+  control "TransacaoController" as CTRL
+end box
+box "Service" #F5F3FF
+  control "TransacaoMoedaService" as TS
+  control "ProfessorService" as PS
+  control "AlunoService" as AS
+  control "NotificacaoEmailService" as NS
+end box
+box "Model" #F0FDF4
+  entity "p : Professor" as PROF
+  entity "a : Aluno" as AL
+  entity "t : Transacao" as TR
+end box
+box "Repository" #FFF7ED
+  database "ProfessorRepository\nAlunoRepository" as RP
+  database "TransacaoRepository" as TRR
+end box
+participant "Servidor SMTP" as SMTP
+
+P -> PG : abre /professor/enviar
+activate PG
+PG -> CTRL : GET /api/alunos · GET /api/professores/me
+activate CTRL
+note right of CTRL : AlunoController e ProfessorController:\nalunos da mesma instituição e saldo atual
+CTRL --> PG : 200 List<AlunoResumoDTO>, ProfessorResponseDTO
+deactivate CTRL
+PG --> P : lista de alunos e saldo
+
+P -> PG : escolhe o aluno, a quantidade e\nescreve o motivo (obrigatório)
+PG -> INT : POST /api/transacoes\n{ alunoId, valor, motivo }
+activate INT
+INT -> INT : sessão válida e\n@PerfilPermitido(PROFESSOR)
+INT -> CTRL : enviarMoedas(usuarioLogado, EnvioMoedasRequestDTO)
+deactivate INT
+activate CTRL
+CTRL -> TS : enviarMoedas(professorId, dto)
+activate TS
+note right of TS : @Transactional
+TS -> PS : buscarPorId(professorId)
+activate PS
+PS -> RP : findById(professorId)
+RP --> PS : Professor
+PS --> TS : p
+deactivate PS
+TS -> AS : buscarPorId(alunoId)
+activate AS
+AS -> RP : findById(alunoId)
+RP --> AS : Aluno
+AS --> TS : a
+deactivate AS
+
+TS -> PROF : enviarMoedas(a, valor, motivo)
+activate PROF
+alt motivo vazio, valor <= 0, aluno de outra instituição ou saldo insuficiente
+  PROF --> TS : <<exception>> RegraNegocioException
+  TS --> CTRL : (rollback)
+  CTRL --> PG : 422 { erro }
+  PG --> P : exibe a mensagem
+else regras atendidas
+  PROF -> PROF : debitarMoedas(valor)
+  PROF -> AL : adicionarMoedas(valor)
+  create TR
+  PROF -> TR : new Transacao(valor, motivo, a, p)
+  PROF --> TS : t
+  deactivate PROF
+  TS -> TRR : save(t)
+  TS -> TS : publishEvent(MoedasEnviadasEvent)
+  TS --> CTRL : t
+  deactivate TS
+  note over TS, TRR : commit: saldos de p e a gravados juntos;\n@Version impede gasto duplo em envios simultâneos
+  CTRL --> PG : 201 Created TransacaoResponseDTO
+  deactivate CTRL
+  PG --> P : confirma o envio e atualiza o saldo
+
+  == Após o commit (@TransactionalEventListener AFTER_COMMIT + @Async) ==
+  TS ->> NS : notificarRecebimentoMoedas(MoedasEnviadasEvent)
+  activate NS
+  NS ->> SMTP : send("[TOKEN] Você recebeu N moeda(s)!")
+  deactivate NS
+  SMTP ->> AL : e-mail com valor, professor, motivo e saldo
+end
+deactivate PG
+@enduml

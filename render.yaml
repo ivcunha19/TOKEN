@@ -1,0 +1,64 @@
+# Blueprint do Render: back-end Spring Boot (Docker) + PostgreSQL gerenciado.
+# No painel do Render: New > Blueprint > escolha este repositório. Passo a passo no README ("Implantação na nuvem").
+#
+# A URL pública do serviço será https://<name>.onrender.com. Se o nome já estiver em uso,
+# o Render acrescenta um sufixo: copie a URL final para frontend/vercel.json.
+
+services:
+  - type: web
+    name: token-moeda-estudantil
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/instituicoes
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: TZ
+        value: America/Sao_Paulo
+      # Instância gratuita tem 512 MB: limita o heap e acelera a inicialização
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k"
+      - key: DB_HOST
+        fromDatabase:
+          name: token-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: token-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: token-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: token-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: token-db
+          property: password
+      # E-mail (opcional). Deixe EMAIL_HABILITADO=false até configurar um SMTP
+      # (ex.: Mailtrap Email Testing: sandbox.smtp.mailtrap.io, porta 2525).
+      - key: EMAIL_HABILITADO
+        value: "false"
+      - key: MAIL_HOST
+        value: sandbox.smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+databases:
+  - name: token-db
+    plan: free
+    region: virginia
+    databaseName: tokendb
+    user: token
+    postgresMajorVersion: "16"

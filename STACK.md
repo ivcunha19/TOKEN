@@ -115,3 +115,21 @@ docker compose down -v                    # para e apaga o banco (volta aos dado
 docker compose run --rm testes-front                                       # roda uma vez
 docker compose run --rm testes-front sh -c "npm ci && npm run test:coverage"  # com cobertura
 ```
+
+---
+
+## 5. Nuvem e modelagem (Release 2)
+
+| Tecnologia | Versão / plano | Para que serve no TOKEN |
+|------------|----------------|-------------------------|
+| Vercel | Hobby (gratuito) | Hospeda o build do React (`frontend/dist`) numa CDN. O `frontend/vercel.json` repassa `/api/**` ao Render (rewrite), então o cookie de sessão continua sendo da mesma origem. |
+| Render – Web Service | Free (512 MB) | Roda o mesmo `Dockerfile` da raiz com o perfil `prod`. A configuração está no `render.yaml` (Blueprint). |
+| Render – PostgreSQL | 16, Free | Banco da nuvem. O driver `org.postgresql` só é usado no perfil `prod`; localmente continua o H2. |
+| Mailtrap (Email Testing) | gratuito | SMTP da nuvem (porta 2525). Mostra os e-mails numa caixa web, como o Mailpit. |
+| PlantUML | 1.2024.8 (imagem Docker) | Diagramas de sequência, visão geral de interação e implantação (`Diagramas/Release2/**/*.puml`). Gerar os PNGs: `docker compose run --rm diagramas`. |
+
+**Perfis do Spring:**
+- *padrão* (local/Docker): H2 em arquivo, Mailpit, console do H2 ligado.
+- `prod` (Render): PostgreSQL, cookie `Secure`, cabeçalhos `X-Forwarded-*` e SMTP com autenticação.
+
+A foto da vantagem é mapeada como `VARBINARY` (vira `bytea` no PostgreSQL) em vez de `@Lob`. Assim funciona igual nos dois bancos.
