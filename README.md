@@ -10,8 +10,8 @@ O **TOKEN** (*Talent & Outstanding Knowledge Educational Network*) permite que p
 
 | | Endereço |
 |---|---|
-| Aplicação (front-end no Vercel) | _preencher após o deploy_ — `https://<projeto>.vercel.app` |
-| API (back-end no Render) | _preencher após o deploy_ — `https://token-moeda-estudantil.onrender.com/api/instituicoes` |
+| Aplicação (front-end no Vercel) | https://token-wpzt.onrender.com/login |
+
 
 > O back-end usa o plano gratuito do Render, que hiberna após 15 minutos sem uso. O primeiro acesso depois disso leva cerca de 1 minuto. Como implantar: [Implantação na nuvem](#implantação-na-nuvem-vercel--render).
 
