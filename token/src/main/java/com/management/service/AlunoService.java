@@ -20,17 +20,20 @@ public class AlunoService {
     private final AlunoRepository alunoRepository;
     private final UsuarioRepository usuarioRepository;
     private final InstituicaoService instituicaoService;
+    private final ValidadorCadastroUsuario validadorCadastroUsuario;
     private final TransacaoRepository transacaoRepository;
     private final ResgateVantagemRepository resgateRepository;
 
     public AlunoService(AlunoRepository alunoRepository,
                         UsuarioRepository usuarioRepository,
                         InstituicaoService instituicaoService,
+                        ValidadorCadastroUsuario validadorCadastroUsuario,
                         TransacaoRepository transacaoRepository,
                         ResgateVantagemRepository resgateRepository) {
         this.alunoRepository = alunoRepository;
         this.usuarioRepository = usuarioRepository;
         this.instituicaoService = instituicaoService;
+        this.validadorCadastroUsuario = validadorCadastroUsuario;
         this.transacaoRepository = transacaoRepository;
         this.resgateRepository = resgateRepository;
     }
@@ -54,12 +57,7 @@ public class AlunoService {
         String email = dto.getEmail().trim().toLowerCase();
         String cpf = Documentos.formatarCpf(dto.getCpf());
 
-        if (usuarioRepository.existsByLogin(login)) {
-            throw new RegraNegocioException("Já existe um usuário cadastrado com o login: " + login);
-        }
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new RegraNegocioException("Já existe um usuário cadastrado com o e-mail: " + email);
-        }
+        validadorCadastroUsuario.validarNovo(login, email);
         if (usuarioRepository.existsPessoaByCpf(cpf)) {
             throw new RegraNegocioException("Já existe uma pessoa cadastrada com o CPF: " + cpf);
         }
@@ -79,12 +77,8 @@ public class AlunoService {
         String email = dto.getEmail().trim().toLowerCase();
         String cpf = Documentos.formatarCpf(dto.getCpf());
 
-        if (!existente.getLogin().equals(login) && usuarioRepository.existsByLogin(login)) {
-            throw new RegraNegocioException("Já existe outro usuário com o login: " + login);
-        }
-        if (!existente.getEmail().equalsIgnoreCase(email) && usuarioRepository.existsByEmail(email)) {
-            throw new RegraNegocioException("Já existe outro usuário com o e-mail: " + email);
-        }
+        validadorCadastroUsuario.validarAlteracao(
+                existente.getLogin(), existente.getEmail(), login, email);
         if (!existente.getCpf().equals(cpf) && usuarioRepository.existsPessoaByCpf(cpf)) {
             throw new RegraNegocioException("Já existe outra pessoa com o CPF: " + cpf);
         }

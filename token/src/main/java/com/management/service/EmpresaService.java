@@ -6,7 +6,6 @@ import com.management.exception.RegraNegocioException;
 import com.management.model.Empresa;
 import com.management.repository.EmpresaRepository;
 import com.management.repository.ResgateVantagemRepository;
-import com.management.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,14 +15,14 @@ import java.util.List;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final ValidadorCadastroUsuario validadorCadastroUsuario;
     private final ResgateVantagemRepository resgateRepository;
 
     public EmpresaService(EmpresaRepository empresaRepository,
-                          UsuarioRepository usuarioRepository,
+                          ValidadorCadastroUsuario validadorCadastroUsuario,
                           ResgateVantagemRepository resgateRepository) {
         this.empresaRepository = empresaRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.validadorCadastroUsuario = validadorCadastroUsuario;
         this.resgateRepository = resgateRepository;
     }
 
@@ -45,12 +44,7 @@ public class EmpresaService {
         String email = dto.getEmail().trim().toLowerCase();
         String cnpj = Documentos.formatarCnpj(dto.getCnpj());
 
-        if (usuarioRepository.existsByLogin(login)) {
-            throw new RegraNegocioException("Já existe um usuário cadastrado com o login: " + login);
-        }
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new RegraNegocioException("Já existe um usuário cadastrado com o e-mail: " + email);
-        }
+        validadorCadastroUsuario.validarNovo(login, email);
         if (empresaRepository.existsByCnpj(cnpj)) {
             throw new RegraNegocioException("Já existe uma empresa cadastrada com o CNPJ: " + cnpj);
         }
@@ -67,12 +61,8 @@ public class EmpresaService {
         String email = dto.getEmail().trim().toLowerCase();
         String cnpj = Documentos.formatarCnpj(dto.getCnpj());
 
-        if (!existente.getLogin().equals(login) && usuarioRepository.existsByLogin(login)) {
-            throw new RegraNegocioException("Já existe outro usuário com o login: " + login);
-        }
-        if (!existente.getEmail().equalsIgnoreCase(email) && usuarioRepository.existsByEmail(email)) {
-            throw new RegraNegocioException("Já existe outro usuário com o e-mail: " + email);
-        }
+        validadorCadastroUsuario.validarAlteracao(
+                existente.getLogin(), existente.getEmail(), login, email);
         if (!existente.getCnpj().equals(cnpj) && empresaRepository.existsByCnpj(cnpj)) {
             throw new RegraNegocioException("Já existe outra empresa com o CNPJ: " + cnpj);
         }
